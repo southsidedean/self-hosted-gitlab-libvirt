@@ -1,0 +1,22 @@
+iconcurrent = 1
+check_interval = 0
+
+[session_server]
+  session_timeout = 1800
+
+[[runners]]
+  name = "libvirt-driver"
+  url = "https://gitlab.com/"
+  token = "xxxxx"
+  executor = "custom"
+  builds_dir = "/home/gitlab-runner/builds"
+  cache_dir = "/home/gitlab-runner/cache"
+  [runners.custom_build_dir]
+  [runners.cache]
+    [runners.cache.s3]
+    [runners.cache.gcs]
+  [runners.custom]
+    prepare_exec = "/opt/libvirt-driver/prepare.sh" # Path to a bash script to create VM.
+    run_exec = "/opt/libvirt-driver/run.sh" # Path to a bash script to run script inside of VM over ssh.
+    cleanup_exec = "/opt/libvirt-driver/cleanup.sh" # Path to a bash script to delete VM and disks.
+
