@@ -202,7 +202,7 @@ You should see something similar to the following:
 
 You will need to log in to the shared runner instance using `virsh-console`:
 ```bash
-virsh console <<instance_name>
+virsh console <<instance_name>>
 ```
 
 For example:
