@@ -3,7 +3,7 @@
 # Script to build GitLab libvirt runner
 # See https://docs.gitlab.com/runner/executors/custom_examples/libvirt.html
 # Tom Dean
-# 2/22/23
+# 10/10/23
 
 # Set root password here, from first argument
 # If you want a randomized password, don't set it, but
@@ -19,7 +19,12 @@ virt-builder debian-11 \
     --format qcow2 \
     --hostname gitlab-runner-bullseye \
     --network \
-    --install curl \
+    --install curl,gnupg,software-properties-common,libvirt-clients,libvirt-daemon-system,genisoimage,xsltproc,docker \
+    --run-command 'wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg' \
+    --run-command 'gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint' \
+    --run-command 'echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list' \
+    --run-command 'apt update' \
+    --install terraform \
     --run-command 'curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | bash' \
     --run-command 'curl -s "https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh" | bash' \
     --run-command 'useradd -m -p "" gitlab-runner -s /bin/bash' \
@@ -31,5 +36,5 @@ virt-builder debian-11 \
     --run-command "grub-mkconfig -o /boot/grub/grub.cfg" \
     --run-command "echo 'auto eth0' >> /etc/network/interfaces" \
     --run-command "echo 'allow-hotplug eth0' >> /etc/network/interfaces" \
-    --run-command "echo 'iface eth0 inet dhcp' >> /etc/network/interfaces"
+    --run-command "echo 'iface eth0 inet dhcp' >> /etc/network/interfaces" \
     --root-password password:$ROOT_PASSWORD
