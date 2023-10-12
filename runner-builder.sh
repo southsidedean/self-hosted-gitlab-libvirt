@@ -3,7 +3,7 @@
 # Script to build GitLab libvirt runner
 # See https://docs.gitlab.com/runner/executors/custom_examples/libvirt.html
 # Tom Dean
-# 10/10/23
+# 10/11/23
 
 # Set root password here, from first argument
 # If you want a randomized password, don't set it, but
