@@ -19,7 +19,7 @@ virt-builder debian-11 \
     --format qcow2 \
     --hostname gitlab-runner-bullseye \
     --network \
-    --install curl,gnupg,software-properties-common,libvirt-clients,libvirt-daemon-system,genisoimage,xsltproc,docker \
+    --install curl,gnupg,software-properties-common,libvirt-clients,libvirt-daemon-system,genisoimage,xsltproc,docker,sudo \
     --run-command 'wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg' \
     --run-command 'gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint' \
     --run-command 'echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list' \
@@ -30,6 +30,9 @@ virt-builder debian-11 \
     --run-command 'useradd -m -p "" gitlab-runner -s /bin/bash' \
     --install gitlab-runner,git,git-lfs,openssh-server \
     --run-command "git lfs install --skip-repo" \
+    --run-command "mkdir -p /opt/tf-state" \
+    --run-command "chown -R gitlab-runner:gitlab-runner /opt/tf-state" \
+    --run-command "chmod -R 775 /opt/tf-state" \
     --ssh-inject gitlab-runner:file:/root/.ssh/id_rsa.pub \
     --run-command "echo 'gitlab-runner ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers" \
     --run-command "sed -E 's/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\"/' -i /etc/default/grub" \

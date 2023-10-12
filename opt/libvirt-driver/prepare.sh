@@ -23,7 +23,10 @@ virt-install \
     --ram=2048 \
     --network default \
     --graphics none \
-    --noautoconsole
+    --noautoconsole \
+    --cpu numa.cell0.memory=2,numa.cell0.cpus=0-1,numa.cell0.id=0,numa.cell0.unit=GiB,numa.cell0.memAccess=shared \
+    --memorybacking access.mode=shared \
+    --filesystem type=mount,mode=passthrough,driver.type=virtiofs,source=/opt/tf-state,target=tf-state-dir
 
 # Wait for VM to get IP
 echo 'Waiting for VM to get IP'
@@ -61,4 +64,9 @@ for i in $(seq 1 30); do
 
     sleep 1s
 done
+
+# Mount state directory
+
+echo "Mounting tf-state-dir at /opt/tf-state"
+ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no gitlab-runner@"$VM_IP" "/usr/bin/sudo mount -t virtiofs tf-state-dir /opt/tf-state"
 
