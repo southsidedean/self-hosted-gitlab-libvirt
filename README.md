@@ -375,3 +375,7 @@ In this tutorial, we created a "lab in a box" to host a local GitLab instance wi
 Enjoy!
 
 ***Tom Dean***
+
+## License
+
+The scripts are licensed under [GPL-3.0](LICENSE), and this README, the guides, and the images are licensed under [CC BY-SA 4.0](LICENSE-docs).

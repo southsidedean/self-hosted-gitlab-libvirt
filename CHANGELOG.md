@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.2.0 (2026-11-04)
 
 The tutorial's steps don't change in this version, apart from one typo fix.
 

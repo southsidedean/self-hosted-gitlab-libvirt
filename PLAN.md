@@ -1,6 +1,6 @@
 # Plan: refreshing the lab in a box
 
-Status: 0.2.0 in progress (2026-11-04). `v0.1.0` is the 2023 tutorial's last version. First drafts of the guides are on the `guide-draft` branch.
+Status: 0.2.0 done, 0.3.0 next (2026-11-04). `v0.1.0` is the 2023 tutorial's last version. First drafts of the guides are on the `guide-draft` branch.
 
 ## Goal
 
@@ -40,7 +40,7 @@ Someone with one Linux machine can follow the README and the pages it links to, 
 
 The tag and the release.
 
-### 0.2.0: Foundation
+### 0.2.0: Foundation (done)
 
 No change to how the tutorial works, apart from fixing `iconcurrent`.
 
@@ -53,7 +53,7 @@ No change to how the tutorial works, apart from fixing `iconcurrent`.
 - Fix `iconcurrent` in both `config.toml` and the README.
 - Add `scripts/check.sh` and `.github/workflows/tests.yml` (see [CI](#ci)).
 - Fix what shellcheck finds at warning level, with no change in behavior.
-- Turn on secret scanning with push protection, Dependabot security updates, and deleting branches after merging.
+- Turn on secret scanning with push protection, Dependabot security updates, private vulnerability reporting, and deleting branches after merging. Allow squash merges only.
 - Add two rulesets: `Protect main`, requiring the `checks` job, and `Protect release tags`.
 
 Done when: `checks` is required on `main`, and the first pull request after that goes through it.

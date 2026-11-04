@@ -21,8 +21,7 @@ A tutorial for building a "lab in a box" on one Linux machine: self-hosted GitLa
 ## Commands
 
 ```bash
-shellcheck -x --severity=warning install-libvirt-driver.sh runner-builder.sh opt/libvirt-driver/*.sh
-actionlint   # once .github/workflows exists
+scripts/check.sh   # every check a pull request has to pass; needs shellcheck, actionlint, and zizmor
 ```
 
 To render the social image, see the comment at the top of `images/social-preview.html`.
