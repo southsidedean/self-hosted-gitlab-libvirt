@@ -35,6 +35,11 @@ if grep -n "iconcurrent" config.toml README.md; then
   failed=1
 fi
 
+echo "== tests: cleanup.sh stops the VM before it deletes the disk"
+if ! scripts/test-cleanup.sh; then
+  failed=1
+fi
+
 if [ "$failed" -ne 0 ]; then
   echo "Some checks FAILED. See above."
   exit 1

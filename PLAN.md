@@ -1,6 +1,6 @@
 # Plan: refreshing the lab in a box
 
-Status: 0.2.0 done, 0.3.0 next (2026-11-04). `v0.1.0` is the 2023 tutorial's last version. First drafts of the guides are on the `guide-draft` branch.
+Status: 0.3.0 in progress (2026-11-04). `v0.1.0` is the 2023 tutorial's last version. First drafts of the guides are on the `guide-draft` branch.
 
 ## Goal
 
