@@ -1,0 +1,59 @@
+name: vm-test
+
+# Not a required check. It boots a real VM, so it's slower than the checks in tests.yml.
+on:
+  pull_request:
+    paths:
+      - .github/workflows/vm-test.yml
+      - scripts/vm-test.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vm-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vm-test:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # GitHub's documented way to turn on KVM for a hosted Linux runner.
+      - name: Turn on KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # Ubuntu's mirror can be very slow, so packages are kept from run to run, and the install
+      # skips recommended packages. They're saved even if a later step fails.
+      - name: This week, for the cache's name
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - name: Packages from earlier runs
+        id: packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-cache
+          key: vm-test-debs-${{ steps.week.outputs.week }}
+          restore-keys: vm-test-debs-
+      - name: Install libvirt and the VM tools
+        timeout-minutes: 25
+        run: |
+          mkdir -p ~/apt-cache/partial
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends -o Acquire::Retries=3 -o Dir::Cache::Archives="$HOME/apt-cache" \
+            qemu-system-x86 qemu-utils ipxe-qemu libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base
+          sudo chown -R "$(id -u)" ~/apt-cache
+      - name: Save the packages for later runs
+        if: steps.packages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-cache
+          key: vm-test-debs-${{ steps.week.outputs.week }}
+      - name: Build and boot a VM
+        run: sudo scripts/vm-test.sh
