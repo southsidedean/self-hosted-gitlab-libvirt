@@ -8,13 +8,24 @@
 # Tom Dean
 # 10/11/23
 
-# Set root password here, from first argument
-# If you want a randomized password, don't set it, but
-# remove the last line of the command (that sets the root password)
+# This needs root, to read root's SSH key and write to libvirt's images folder
 
-ROOT_PASSWORD=$1
+if [ "$(id -u)" -ne 0 ]; then
+    echo 'Please run this as root: sudo ./runner-builder.sh'
+    exit 1
+fi
+
+# The job VMs trust this key, so stop now if it's missing
+
+if [ ! -f /root/.ssh/id_rsa.pub ]; then
+    echo 'The SSH key /root/.ssh/id_rsa.pub is missing. Create it with:'
+    echo '  sudo ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""'
+    exit 1
+fi
 
 # Let's build our runner image
+# The root password is random, and virt-builder prints it when it finishes.
+# You don't need it to run jobs, because the scripts log in with the SSH key.
 
 virt-builder debian-11 \
     --size 8G \
@@ -43,4 +54,4 @@ virt-builder debian-11 \
     --run-command "echo 'auto eth0' >> /etc/network/interfaces" \
     --run-command "echo 'allow-hotplug eth0' >> /etc/network/interfaces" \
     --run-command "echo 'iface eth0 inet dhcp' >> /etc/network/interfaces" \
-    --root-password password:$ROOT_PASSWORD
+    --root-password random

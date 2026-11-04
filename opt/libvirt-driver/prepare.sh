@@ -14,6 +14,14 @@ set -eo pipefail
 # trap any error, and mark it as a system failure.
 trap 'exit $SYSTEM_FAILURE_EXIT_CODE' ERR
 
+# We log in to the VM with this key, so stop now if it's missing.
+if [ ! -f /root/.ssh/id_rsa ]; then
+    echo 'The SSH key /root/.ssh/id_rsa is missing. Create it with:'
+    echo '  sudo ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""'
+    echo 'Then build the base image again with runner-builder.sh, so the image has the new key.'
+    exit "$SYSTEM_FAILURE_EXIT_CODE"
+fi
+
 # Copy base disk to use for Job.
 qemu-img create -f qcow2 -b "$BASE_VM_IMAGE" "$VM_IMAGE" -F qcow2
 
@@ -34,7 +42,7 @@ virt-install \
 
 # Wait for VM to get IP
 echo 'Waiting for VM to get IP'
-for i in $(seq 1 30); do
+for i in $(seq 1 300); do
     VM_IP=$(_get_vm_ip)
 
     if [ -n "$VM_IP" ]; then
@@ -42,8 +50,8 @@ for i in $(seq 1 30); do
         break
     fi
 
-    if [ "$i" == "30" ]; then
-        echo 'Waited 30 seconds for VM to start, exiting...'
+    if [ "$i" == "300" ]; then
+        echo 'Waited 300 seconds for VM to start, exiting...'
         # Inform GitLab Runner that this is a system failure, so it
         # should be retried.
         exit "$SYSTEM_FAILURE_EXIT_CODE"
@@ -54,13 +62,13 @@ done
 
 # Wait for ssh to become available
 echo "Waiting for sshd to be available"
-for i in $(seq 1 30); do
+for i in $(seq 1 300); do
     if ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no gitlab-runner@"$VM_IP" >/dev/null 2>/dev/null; then
         break
     fi
 
-    if [ "$i" == "30" ]; then
-        echo 'Waited 30 seconds for sshd to start, exiting...'
+    if [ "$i" == "300" ]; then
+        echo 'Waited 300 seconds for sshd to start, exiting...'
         # Inform GitLab Runner that this is a system failure, so it
         # should be retried.
         exit "$SYSTEM_FAILURE_EXIT_CODE"

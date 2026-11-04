@@ -85,6 +85,7 @@ Done when: `checks` passes, and the sample job in the first-pipeline guide goes 
 **README**
 
 - Correct the runner steps: GitLab Runner and the driver scripts run on the host.
+- Remove the password from the `runner-builder.sh` step, and the console login that used it. The script has used a random password since 0.3.0.
 - Choose one way to set up the runner, and test it. Today, pasting a config with a fake token and then running `gitlab-runner register` leaves two entries.
 - Move to the current registration flow: create the runner in GitLab with **Run untagged** selected, then register with its `glrt-` token.
 - Say "instance runner" where GitLab now does.
