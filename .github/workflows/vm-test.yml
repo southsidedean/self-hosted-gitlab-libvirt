@@ -23,7 +23,11 @@ concurrency:
 
 jobs:
   vm-test:
-    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,8 +49,8 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/apt-cache
-          key: vm-test-debs-${{ steps.week.outputs.week }}
-          restore-keys: vm-test-debs-
+          key: diag-debs-${{ matrix.os }}-${{ steps.week.outputs.week }}
+          restore-keys: diag-debs-${{ matrix.os }}-
       - name: Install libvirt and the VM tools
         timeout-minutes: 25
         run: |
@@ -60,18 +64,20 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/apt-cache
-          key: vm-test-debs-${{ steps.week.outputs.week }}
+          key: diag-debs-${{ matrix.os }}-${{ steps.week.outputs.week }}
       - name: TEMPORARY network diagnostic
         run: |
-          echo "--- host"; ls -l /etc/resolv.conf; cat /etc/resolv.conf; resolvectl dns || true; which passt; dpkg -l passt | tail -1; dpkg -l libguestfs0t64 libguestfs0 2>/dev/null | tail -2
-          probe='{ ls -l /etc/resolv.conf; cat /etc/resolv.conf; ip addr; ip route; getent hosts deb.debian.org || echo "DNS FAILED"; timeout 5 bash -c "</dev/tcp/1.1.1.1/53" && echo "TCP BY IP OK" || echo "TCP BY IP FAILED"; timeout 5 bash -c "</dev/tcp/151.101.2.132/80" && echo "HTTP BY IP OK" || echo "HTTP BY IP FAILED"; } > /root/diag.txt 2>&1 || true'
-          sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d1.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" -v -x > /tmp/vb.log 2>&1 || true
-          echo "--- qemu network args"; grep -E 'netdev|passt|slirp|-nic ' /tmp/vb.log | cut -c1-200 | head -12
-          echo "--- inside the build, default host resolv.conf"; sudo virt-cat -a /tmp/d1.qcow2 /root/diag.txt
-          echo "--- again, with the host's real resolv.conf"
-          sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf; cat /etc/resolv.conf
-          sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d2.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" > /tmp/vb2.log 2>&1 || true
-          sudo virt-cat -a /tmp/d2.qcow2 /root/diag.txt
+          probe='{ ip addr show eth0; ip route; timeout 5 bash -c "</dev/tcp/1.1.1.1/53" && echo "TCP BY IP OK" || echo "TCP BY IP FAILED"; } > /root/diag.txt 2>&1 || true'
+          run_probe() {
+            sudo rm -f /tmp/d.qcow2
+            sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" -v -x > /tmp/vb.log 2>&1 || true
+            echo "--- backend args"; grep -cE 'netdev stream' /tmp/vb.log; grep -E '^ *-netdev|-netdev user' /tmp/vb.log | head -3 | cut -c1-160
+            echo "--- appliance network log"; grep -iE 'dhcp|carrier|no lease|eth0|ipv4ll|resolv|passt:|netif|ip link|ip addr' /tmp/vb.log | grep -v 'command: run' | cut -c1-170 | head -40
+            echo "--- result"; sudo virt-cat -a /tmp/d.qcow2 /root/diag.txt | grep -E 'inet |TCP BY'
+          }
+          grep PRETTY /etc/os-release; dpkg -l | grep -E ' (libguestfs0|libguestfs0t64|passt|supermin|dhcpcd-base|dhcpcd|isc-dhcp-client) ' | awk '{print $2, $3}'
+          echo "=== with passt"; run_probe
+          echo "=== without passt"; sudo apt-get remove -y -q passt > /dev/null; run_probe
           exit 1
       - name: Build the image and run jobs in a VM
         run: sudo scripts/vm-test.sh
