@@ -1,7 +1,10 @@
 #!/usr/bin/bash
 
 # Script to build GitLab libvirt runner
-# See https://docs.gitlab.com/runner/executors/custom_examples/libvirt.html
+# Adapted from GitLab's libvirt custom executor example:
+# https://docs.gitlab.com/runner/executors/custom_examples/libvirt/
+# The original, by GitLab, is licensed CC BY-SA 4.0. This adapted version is
+# licensed GPL-3.0; see LICENSE.
 # Tom Dean
 # 10/11/23
 
