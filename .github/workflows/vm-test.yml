@@ -1,0 +1,37 @@
+name: vm-test
+
+# Not a required check. It boots a real VM, so it's slower than the checks in tests.yml.
+on:
+  pull_request:
+    paths:
+      - .github/workflows/vm-test.yml
+      - scripts/vm-test.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vm-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vm-test:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # GitHub's documented way to turn on KVM for a hosted Linux runner.
+      - name: Turn on KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install libvirt and the VM tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base
+      - name: Build and boot a VM
+        run: sudo scripts/vm-test.sh
