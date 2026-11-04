@@ -21,6 +21,8 @@ show_state() {
     virsh net-list --all || true
     virsh net-dhcp-leases default || true
     virsh domifaddr "$VM_NAME" || true
+    echo "== The VM's own log, for SSH:"
+    virt-log -d "$VM_NAME" | grep -i "ssh" | tail -20 || true
 }
 trap show_state ERR
 
@@ -40,6 +42,7 @@ virt-builder debian-13 \
     --hostname vm-test \
     --network \
     --install openssh-server \
+    --run-command "ssh-keygen -A" \
     --ssh-inject "root:file:$SSH_KEY.pub" \
     --run-command "sed -E 's/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\"/' -i /etc/default/grub" \
     --run-command "grub-mkconfig -o /boot/grub/grub.cfg" \
