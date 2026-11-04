@@ -23,11 +23,7 @@ concurrency:
 
 jobs:
   vm-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-26.04, ubuntu-24.04]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,37 +45,36 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/apt-cache
-          key: diag-debs-${{ matrix.os }}-${{ steps.week.outputs.week }}
-          restore-keys: diag-debs-${{ matrix.os }}-
+          key: vm-test-debs-${{ steps.week.outputs.week }}
+          restore-keys: vm-test-debs-
       - name: Install libvirt and the VM tools
         timeout-minutes: 25
         run: |
           mkdir -p ~/apt-cache/partial
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends -o Acquire::Retries=3 -o Dir::Cache::Archives="$HOME/apt-cache" \
-            qemu-system-x86 qemu-utils ipxe-qemu libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base osinfo-db passt
+            qemu-system-x86 qemu-utils ipxe-qemu libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base osinfo-db
           sudo chown -R "$(id -u)" ~/apt-cache
       - name: Save the packages for later runs
         if: steps.packages.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/apt-cache
-          key: diag-debs-${{ matrix.os }}-${{ steps.week.outputs.week }}
-      - name: TEMPORARY network diagnostic
+          key: vm-test-debs-${{ steps.week.outputs.week }}
+      - name: TEMPORARY DNS diagnostic
         run: |
           set +e
-          probe='{ ip addr show eth0; ip route; timeout 5 bash -c "</dev/tcp/1.1.1.1/53" && echo "TCP BY IP OK" || echo "TCP BY IP FAILED"; } > /root/diag.txt 2>&1 || true'
+          probe='{ cat /etc/resolv.conf; getent hosts deb.debian.org && echo "DNS OK" || echo "DNS FAILED"; timeout 5 bash -c "</dev/tcp/1.1.1.1/53" && echo "TCP BY IP OK" || echo "TCP BY IP FAILED"; } > /root/diag.txt 2>&1 || true'
           run_probe() {
             sudo rm -f /tmp/d.qcow2
-            sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" -v -x > /tmp/vb.log 2>&1
-            echo "virt-builder exit=$?"
-            echo "--- netdev args"; grep -E '^ *-netdev|-netdev user|-nic ' /tmp/vb.log | head -3 | cut -c1-160
-            echo "--- network lines"; grep -E 'dhcpcd|dhclient|DHCP|carrier|no lease|ipv4ll|eth0|sit0|ip6tnl|guestfs_network|passt\.pid|pid file|PID|Permission denied|apparmor' /tmp/vb.log | grep -vE 'command: run: \\|Failed to resolve|tmpfiles|-m, --mtu' | cut -c1-175 | head -60
-            echo "--- last lines"; grep -E 'error|Error|failed' /tmp/vb.log | grep -vE 'Failed to resolve|tmpfiles' | tail -6 | cut -c1-175
-            echo "--- result"; sudo virt-cat -a /tmp/d.qcow2 /root/diag.txt | grep -E 'inet |TCP BY'
+            sudo virt-builder debian-13 --size 8G --output /tmp/d.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" > /tmp/vb.log 2>&1
+            sudo virt-cat -a /tmp/d.qcow2 /root/diag.txt | grep -E 'nameserver|DNS|TCP BY'
           }
-          echo "=== with passt"; run_probe
-          echo "=== without passt"; sudo apt-get remove -y -q passt > /dev/null 2>&1; run_probe
-          exit 1
+          which passt || echo "passt not installed"
+          echo "=== host resolv.conf: $(readlink -f /etc/resolv.conf)"; grep nameserver /etc/resolv.conf; run_probe
+          sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+          echo "=== host resolv.conf: $(readlink -f /etc/resolv.conf)"; grep nameserver /etc/resolv.conf; run_probe
+          sudo rm -f /tmp/d.qcow2
+          exit 0
       - name: Build the image and run jobs in a VM
         run: sudo scripts/vm-test.sh
