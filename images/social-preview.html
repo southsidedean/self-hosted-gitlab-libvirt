@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- The repository's social preview (GitHub: Settings, General, Social preview), drawn from
+     the logo. After a change, render it at 1280x640 with headless Chrome:
+       chrome --headless=new --hide-scrollbars --force-device-scale-factor=1 \
+         --window-size=1280,640 --screenshot=images/social-preview.png images/social-preview.html
+     then view the image and upload it again. -->
+<html><head><meta charset="utf-8"><title>self-hosted-gitlab-libvirt social preview</title>
+<style>
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    background: radial-gradient(ellipse 900px 700px at 100% 50%, #22305a 0%, #141c35 55%, #0f1529 100%);
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    color: #e3e9fb; position: relative;
+  }
+  .text { position: absolute; left: 80px; top: 0; bottom: 30px; width: 590px;
+          display: flex; flex-direction: column; justify-content: center; }
+  .logo { width: 104px; height: 104px; margin: 0 0 18px -6px; }
+  h1 { margin: 0 0 14px; font-size: 52px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; color: #fff; }
+  .lede { margin: 0 0 16px; font-size: 30px; line-height: 1.2; font-weight: 700; color: #fff; white-space: nowrap; }
+  .lede em { font-style: normal; color: #f2b84b; }
+  .sub { margin: 0; font-size: 24px; line-height: 1.35; color: #b7c2e3; }
+  .repo { position: absolute; left: 80px; bottom: 40px; font-size: 18px; color: #7f8bb3; letter-spacing: 0.3px; }
+
+  /* The logo's picture, made large: GitLab is the amber tile, the three stages are what it
+     works with, and KVM/libvirt is the foundation under all of it. */
+  .screen { position: absolute; left: 710px; top: 92px; width: 500px; height: 456px;
+            background: #1f2b4d; border-radius: 28px; box-shadow: 0 30px 80px rgba(0,0,0,0.45); }
+  .gitlab { position: absolute; left: 80px; top: 30px; width: 340px; height: 142px; box-sizing: border-box;
+            border-radius: 22px; background: #f2b84b; color: #1f2b4d; text-align: center; padding-top: 14px; }
+  .gitlab svg { display: block; width: 44px; height: 44px; margin: 0 auto 4px; }
+  .gitlab b { display: block; font-size: 32px; font-weight: 800; letter-spacing: -0.3px; }
+  .gitlab small { display: block; margin-top: 2px; font-size: 19px; font-weight: 600; }
+  .stem { position: absolute; left: 246px; top: 172px; width: 8px; height: 44px; background: #f2b84b; }
+  .line { position: absolute; left: 95px; right: 95px; top: 230px; height: 8px; border-radius: 4px; background: rgba(227,233,251,0.32); }
+  .stage { position: absolute; top: 212px; width: 150px; margin-left: -75px; text-align: center; }
+  .dot { width: 44px; height: 44px; margin: 0 auto 8px; border-radius: 50%; }
+  .stage b { font-size: 20px; font-weight: 700; color: #e3e9fb; }
+  .stage small { display: block; margin-top: 2px; font-size: 16px; line-height: 1.25; color: #9aa8cc; }
+  .base { position: absolute; left: 30px; right: 30px; bottom: 26px; height: 58px; border-radius: 14px;
+          background: rgba(227,233,251,0.13); border: 1px solid rgba(227,233,251,0.18);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 21px; font-weight: 700; color: #e3e9fb; }
+</style></head>
+<body>
+  <div class="text">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="8" width="56" height="42" rx="9" fill="#33447a"/><rect x="20" y="14" width="24" height="17" rx="4" fill="#f2b84b"/><path d="M26.5 22.5 L30.5 26.5 L37.5 18.5" fill="none" stroke="#33447a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 40 H50" stroke="#e3e9fb" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/><circle cx="14" cy="40" r="4" fill="#e3e9fb" opacity="0.9"/><circle cx="32" cy="40" r="4" fill="#f2b84b"/><circle cx="50" cy="40" r="4" fill="#e3e9fb" opacity="0.55"/><path d="M32 31 V36" stroke="#f2b84b" stroke-width="2.5" stroke-linecap="round"/><rect x="24" y="53" width="16" height="4" rx="2" fill="#33447a"/></svg>
+    <h1>self-hosted-gitlab-libvirt</h1>
+    <p class="lede">Build a <em>lab in a box</em> on one Linux machine</p>
+    <p class="sub">Your own GitLab with CI/CD, and the tools to build, run, and manage your projects.</p>
+  </div>
+  <div class="repo">github.com/southsidedean/self-hosted-gitlab-libvirt</div>
+
+  <div class="screen">
+    <div class="gitlab">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13 L10 19 L20 6" fill="none" stroke="#1f2b4d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b>Your own GitLab</b>
+      <small>code and CI/CD, kept local</small>
+    </div>
+    <div class="stem"></div>
+    <div class="line"></div>
+    <div class="stage" style="left: 95px"><div class="dot" style="background: #d5dcf1"></div><b>Runner</b><small>a KVM VM<br>for each job</small></div>
+    <div class="stage" style="left: 250px"><div class="dot" style="background: #f2b84b"></div><b>Automation</b><small>Terraform, Packer,<br>Ansible</small></div>
+    <div class="stage" style="left: 405px"><div class="dot" style="background: #7f8bb3"></div><b>Cockpit</b><small>web-based<br>management</small></div>
+    <div class="base">KVM/libvirt, the foundation</div>
+  </div>
+</body></html>

@@ -1,6 +1,13 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/gitlab-libvirt-logo-dark.svg">
+  <img src="images/gitlab-libvirt-logo.svg" alt="self-hosted-gitlab-libvirt logo: a pipeline of three stages" width="88">
+</picture>
+
 # Deploying a Self-Hosted GitLab Instance With a KVM GitLab Shared Runner on Ubuntu Linux 22.04
 
 ### Tom Dean: [LinkedIn](https://www.linkedin.com/in/tomdeanjr/)
+
+> **Heads up (November 2026):** *I wrote this tutorial in 2023, and some of the steps are out of date.  I'm refreshing it now, so check [the plan](PLAN.md) to see where that stands before you follow along.*
 
 ## Introduction
 
@@ -135,7 +142,7 @@ Follow the instructions.  Again, if you're using a custom port for HTTPS, make s
 
 Once installation is complete, head over to your web browser, plug in the URL to your GitLab instance and look for the login screen as shown below.
 
-![GitLab Achieved!](images/GitLab_Achieved.png)
+![GitLab Achieved!](images/archive/GitLab_Achieved.png)
 
 At this point, you'll want to log in as `root`, change the default password that was supplied at installation time (*you saved that, right?*), and create a local GitLab user for yourself (and give that user Admin permissions, if desired).
 
@@ -198,7 +205,7 @@ virsh list --all
 
 You should see something similar to the following:
 
-![Shared Runner: Running!](images/Screen%20Shot%202023-02-20%20at%203.21.17%20PM.png)
+![Shared Runner: Running!](images/archive/Screen%20Shot%202023-02-20%20at%203.21.17%20PM.png)
 
 You will need to log in to the shared runner instance using `virsh-console`:
 ```bash
@@ -248,7 +255,7 @@ check_interval = 0
 
 In order to utilize our shared runner, we must register it with our GitLab instance.  As a GitLab Administrator, go to the **Admin Area**, then choose **CI/CD --> Runners**.  You will see a blue drop-down menu in the upper right hand area of the screen, **Register an instance runner**.  Click on this to drop down the menu shown below, and select **Show runner installation and registration instructions**.
 
-![Registration Information: Link](images/Screen%20Shot%202023-02-20%20at%203.55.58%20PM.png)
+![Registration Information: Link](images/archive/Screen%20Shot%202023-02-20%20at%203.55.58%20PM.png)
 
 Get the <<URL>> and <<TOKEN>> information, then hop back to the GitLab runner, and as `root`, run:
 
@@ -258,11 +265,11 @@ gitlab-runner register --url <<URL>> --registration-token <<TOKEN>>
 
 Replace the <<URL>> and <<TOKEN>> vaules with your values.  Follow the prompts and provide the proper answers based on your configuration.  When the process is complete, you should see the shared runner appear (after a short delay, possibly).
 
-![Shared Runner Registered!](images/Screen%20Shot%202023-02-20%20at%203.18.06%20PM.png)
+![Shared Runner Registered!](images/archive/Screen%20Shot%202023-02-20%20at%203.18.06%20PM.png)
 
 If you have any projects you'd like to enable your shared runner for, navigate to the projects, go to **Settings --> CI/CD** and then choose **Expand** in the **Runners** section.  You can enable and check the status of shared runners for that project here.
 
-![Shared Runner in Project](images/Screen%20Shot%202023-02-20%20at%203.18.57%20PM.png)
+![Shared Runner in Project](images/archive/Screen%20Shot%202023-02-20%20at%203.18.57%20PM.png)
 
 We're not going to dive into CI/CD and shared runners right now, but if you know all that stuff, feel free to test and debug your runnner now.
 
@@ -354,7 +361,7 @@ sudo systemctl status cockpit
 
 Now you can log in to Cockpit at `https://yourhostname:8090`.
 
-![Cockpit Overview Screen](images/Screen%20Shot%202023-02-22%20at%203.01.05%20PM.png)
+![Cockpit Overview Screen](images/archive/Screen%20Shot%202023-02-22%20at%203.01.05%20PM.png)
 
 You should be able to log in as `root`, or another local user, and should get the dashboard as seen above.
 
