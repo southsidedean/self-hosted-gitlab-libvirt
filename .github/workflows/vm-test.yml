@@ -67,17 +67,19 @@ jobs:
           key: diag-debs-${{ matrix.os }}-${{ steps.week.outputs.week }}
       - name: TEMPORARY network diagnostic
         run: |
+          set +e
           probe='{ ip addr show eth0; ip route; timeout 5 bash -c "</dev/tcp/1.1.1.1/53" && echo "TCP BY IP OK" || echo "TCP BY IP FAILED"; } > /root/diag.txt 2>&1 || true'
           run_probe() {
             sudo rm -f /tmp/d.qcow2
-            sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" -v -x > /tmp/vb.log 2>&1 || true
-            echo "--- backend args"; grep -cE 'netdev stream' /tmp/vb.log; grep -E '^ *-netdev|-netdev user' /tmp/vb.log | head -3 | cut -c1-160
-            echo "--- appliance network log"; grep -iE 'dhcp|carrier|no lease|eth0|ipv4ll|resolv|passt:|netif|ip link|ip addr' /tmp/vb.log | grep -v 'command: run' | cut -c1-170 | head -40
+            sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" -v -x > /tmp/vb.log 2>&1
+            echo "virt-builder exit=$?"
+            echo "--- netdev args"; grep -E '^ *-netdev|-netdev user|-nic ' /tmp/vb.log | head -3 | cut -c1-160
+            echo "--- network lines"; grep -E 'dhcpcd|dhclient|DHCP|carrier|no lease|ipv4ll|eth0|sit0|ip6tnl|guestfs_network|passt\.pid|pid file|PID|Permission denied|apparmor' /tmp/vb.log | grep -vE 'command: run: \\|Failed to resolve|tmpfiles|-m, --mtu' | cut -c1-175 | head -60
+            echo "--- last lines"; grep -E 'error|Error|failed' /tmp/vb.log | grep -vE 'Failed to resolve|tmpfiles' | tail -6 | cut -c1-175
             echo "--- result"; sudo virt-cat -a /tmp/d.qcow2 /root/diag.txt | grep -E 'inet |TCP BY'
           }
-          grep PRETTY /etc/os-release; dpkg -l | grep -E ' (libguestfs0|libguestfs0t64|passt|supermin|dhcpcd-base|dhcpcd|isc-dhcp-client) ' | awk '{print $2, $3}'
           echo "=== with passt"; run_probe
-          echo "=== without passt"; sudo apt-get remove -y -q passt > /dev/null; run_probe
+          echo "=== without passt"; sudo apt-get remove -y -q passt > /dev/null 2>&1; run_probe
           exit 1
       - name: Build the image and run jobs in a VM
         run: sudo scripts/vm-test.sh
