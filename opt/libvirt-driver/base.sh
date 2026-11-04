@@ -14,6 +14,10 @@ BASE_VM_IMAGE="$VM_IMAGES_PATH/gitlab-runner-base.qcow2"
 VM_ID="runner-$CUSTOM_ENV_CI_RUNNER_ID-project-$CUSTOM_ENV_CI_PROJECT_ID-concurrent-$CUSTOM_ENV_CI_CONCURRENT_PROJECT_ID-job-$CUSTOM_ENV_CI_JOB_ID"
 VM_IMAGE="$VM_IMAGES_PATH/$VM_ID.qcow2"
 
+# Talk to the system libvirt instance, where these VMs live, rather than the
+# per-user session instance.
+export LIBVIRT_DEFAULT_URI="qemu:///system"
+
 _get_vm_ip() {
     virsh -q domifaddr "$VM_ID" | awk '{print $4}' | sed -E 's|/([0-9]+)?$||'
 }
