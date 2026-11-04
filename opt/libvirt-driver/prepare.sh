@@ -12,7 +12,7 @@ source ${currentDir}/base.sh # Get variables from base script.
 set -eo pipefail
 
 # trap any error, and mark it as a system failure.
-trap "exit $SYSTEM_FAILURE_EXIT_CODE" ERR
+trap 'exit $SYSTEM_FAILURE_EXIT_CODE' ERR
 
 # Copy base disk to use for Job.
 qemu-img create -f qcow2 -b "$BASE_VM_IMAGE" "$VM_IMAGE" -F qcow2
