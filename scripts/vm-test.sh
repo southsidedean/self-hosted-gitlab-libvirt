@@ -35,7 +35,6 @@ ssh-keygen -q -t ed25519 -N "" -f "$SSH_KEY"
 echo "== Build the image"
 virt-builder debian-13 \
     --size 8G \
-    --no-progress-bars \
     --output "$VM_IMAGE" \
     --format qcow2 \
     --hostname vm-test \
