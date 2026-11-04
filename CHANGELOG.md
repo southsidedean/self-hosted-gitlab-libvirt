@@ -5,6 +5,8 @@
 - Fixed `cleanup.sh`, which asked the VM to shut down and deleted its disk without waiting. It now stops the VM first, waits up to 5 minutes, and keeps the disk if the VM won't stop. It also deletes the disk when `prepare.sh` failed before creating a VM.
 - `prepare.sh` now waits up to 5 minutes for a VM's address and for SSH, up from 30 seconds each, and the scripts always use the system libvirt instance.
 - `runner-builder.sh` and `prepare.sh` stop with a clear message when the SSH key is missing.
+- The job VM image is now Debian 13, and a weekly test builds it and runs real jobs in it.
+- Removed the `/opt/tf-state` share that every job VM mounted. GitLab-managed Terraform state replaces it.
 - `runner-builder.sh` no longer takes a password. The root password is random, and the README's steps catch up in 0.4.0.
 
 ## 0.2.0 (2026-11-04)
