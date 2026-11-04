@@ -6,6 +6,9 @@
 # The original, by GitLab, is licensed CC BY-SA 4.0. This adapted version is
 # licensed GPL-3.0; see LICENSE.
 
+# The scripts that source this file use its variables, so they only look unused here.
+# shellcheck disable=SC2034
+
 VM_IMAGES_PATH="/var/lib/libvirt/images"
 BASE_VM_IMAGE="$VM_IMAGES_PATH/gitlab-runner-base.qcow2"
 VM_ID="runner-$CUSTOM_ENV_CI_RUNNER_ID-project-$CUSTOM_ENV_CI_PROJECT_ID-concurrent-$CUSTOM_ENV_CI_CONCURRENT_PROJECT_ID-job-$CUSTOM_ENV_CI_JOB_ID"

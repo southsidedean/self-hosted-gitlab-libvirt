@@ -216,7 +216,7 @@ Once you're logged in, you will want to edit `/etc/gitlab-runner/config.toml` an
 
 Contents of `/etc/gitlab-runner/config.toml`:
 ```bash
-iconcurrent = 1
+concurrent = 1
 check_interval = 0
 
 [session_server]
