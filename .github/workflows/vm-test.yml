@@ -61,20 +61,9 @@ jobs:
         with:
           path: ~/apt-cache
           key: vm-test-debs-${{ steps.week.outputs.week }}
-      - name: TEMPORARY DNS diagnostic
-        run: |
-          set +e
-          probe='{ cat /etc/resolv.conf; getent hosts deb.debian.org && echo "DNS OK" || echo "DNS FAILED"; timeout 5 bash -c "</dev/tcp/1.1.1.1/53" && echo "TCP BY IP OK" || echo "TCP BY IP FAILED"; } > /root/diag.txt 2>&1 || true'
-          run_probe() {
-            sudo rm -f /tmp/d.qcow2
-            sudo virt-builder debian-13 --size 8G --output /tmp/d.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" > /tmp/vb.log 2>&1
-            sudo virt-cat -a /tmp/d.qcow2 /root/diag.txt | grep -E 'nameserver|DNS|TCP BY'
-          }
-          which passt || echo "passt not installed"
-          echo "=== host resolv.conf: $(readlink -f /etc/resolv.conf)"; grep nameserver /etc/resolv.conf; run_probe
-          sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-          echo "=== host resolv.conf: $(readlink -f /etc/resolv.conf)"; grep nameserver /etc/resolv.conf; run_probe
-          sudo rm -f /tmp/d.qcow2
-          exit 0
+      # GitHub's runner image comes with passt. libguestfs uses it when it's there, and with it
+      # the image build gets no network, so the build uses QEMU's own networking.
+      - name: Remove passt
+        run: sudo apt-get remove -y -q passt
       - name: Build the image and run jobs in a VM
         run: sudo scripts/vm-test.sh
