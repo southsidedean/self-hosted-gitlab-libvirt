@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 (unreleased)
+
+- Fixed `cleanup.sh`, which asked the VM to shut down and deleted its disk without waiting. It now stops the VM first, waits up to 5 minutes, and keeps the disk if the VM won't stop. It also deletes the disk when `prepare.sh` failed before creating a VM.
+
 ## 0.2.0 (2026-11-04)
 
 The tutorial's steps don't change in this version, apart from one typo fix.
