@@ -18,7 +18,7 @@ Someone with one Linux machine can follow the README and the pages it links to, 
 | Question | Decision |
 |---|---|
 | First tag | `v0.1.0` on `88b1413`, signed, with a release that lists the known problems (done 2026-11-03) |
-| Host OS for the tutorial | Ubuntu 26.04, with 24.04 as the fallback if testing finds a blocker. Libvirt and `virt-builder` on 26.04 are untested |
+| Host OS for the tutorial | Ubuntu 26.04, with 24.04 as the fallback if testing finds a blocker. `virt-builder` and libvirt build and boot a VM on 26.04 (`vm-test.yml`), but the full tutorial is untested there |
 | GitLab edition | Community Edition in the tutorial and guides |
 | Job VM image | Debian 13, with Debian 12 as the fallback only if the build fails |
 | Terraform state | GitLab-managed state replaces the `/opt/tf-state` share. Every job VM mounts the same folder today, and managed state adds locking and encryption. This undoes `e5df696` and `88b1413` |
@@ -65,6 +65,7 @@ Each test lands in the same pull request as the fix it covers.
 - Fix `cleanup.sh` so it stops the VM, waits, and only then deletes the disk, as GitLab's current script does. Add one small test file, with fake commands, covering the cleanup order and failure exit codes.
 - Pick up the rest of GitLab's script changes: `LIBVIRT_DEFAULT_URI` and the longer waits.
 - Move the job VM image to Debian 13:
+  - Generate SSH host keys with `ssh-keygen -A`. Without that line, a test VM booted but refused SSH.
   - Remove `docker` and `software-properties-common`, which Debian 13 doesn't have. No job in the tutorial uses Docker, and `docker.io` is there for anyone who needs it.
   - Install `lsb-release` directly, or read the codename from `/etc/os-release`, because the HashiCorp step needs it.
   - Use `curl` in place of `wget`.
@@ -74,7 +75,7 @@ Each test lands in the same pull request as the fix it covers.
 - Have the scripts stop with a clear message when the SSH key is missing.
 - Replace the `/opt/tf-state` share with GitLab-managed Terraform state. Remove its lines from `runner-builder.sh` and `prepare.sh`, including `numa` and `memorybacking` if nothing else needs them. Add a one-sentence note on moving existing state, and a tested `backend "http"` example using `CI_JOB_TOKEN`.
 - Rename `config.toml` to `config.example.toml`, add `config.toml` to `.gitignore`, and update every reference in the same pull request.
-- Add `.github/workflows/vm-test.yml`, if the hosted runners allow it.
+- Grow `.github/workflows/vm-test.yml` to run the real scripts, then give it its weekly schedule. It boots a small test VM today.
 - Write `docs/release-checklist.md`, including the test VM's network, how a job VM finds GitLab, how to avoid a clash between the two layers' default libvirt networks, a check that the weekly run is still enabled, and a hand check of the links.
 
 Done when: `checks` passes, and the sample job in the first-pipeline guide goes green on a test install, following the checklist.
@@ -162,6 +163,5 @@ The test VM isn't created until the 0.3.0 work needs it. The default libvirt net
 
 ## Open questions
 
-- **Can GitHub's hosted runners use KVM for `vm-test.yml`?** GitHub says Linux runners have hardware acceleration, enabled with a udev rule, but this hasn't been run end to end. Try it early in 0.3.0. If it fails, the test moves to the release checklist.
 - **Does `ufw` get in the way of the job VMs?** `docs/security.md` turns on a firewall, and `libvirt` manages firewall rules of its own. Check that job VMs still get an address and reach GitLab.
-- **Does the Debian 13 image work as it's set up?** The template and the HashiCorp and GitLab Runner repositories exist, but the build hasn't been run, and `/etc/network/interfaces` may need another look.
+- **Does the full Debian 13 image work as it's set up?** A small test image builds and boots, and it gets an address using the `/etc/network/interfaces` lines. The HashiCorp and GitLab Runner repositories exist, but the full build, with their packages, hasn't been run.
