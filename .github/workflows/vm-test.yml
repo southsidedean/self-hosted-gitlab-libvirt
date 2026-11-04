@@ -61,5 +61,17 @@ jobs:
         with:
           path: ~/apt-cache
           key: vm-test-debs-${{ steps.week.outputs.week }}
+      - name: TEMPORARY network diagnostic
+        run: |
+          echo "--- host"; ls -l /etc/resolv.conf; cat /etc/resolv.conf; resolvectl dns || true; which passt; dpkg -l passt | tail -1; dpkg -l libguestfs0t64 libguestfs0 2>/dev/null | tail -2
+          probe='{ ls -l /etc/resolv.conf; cat /etc/resolv.conf; ip addr; ip route; getent hosts deb.debian.org || echo "DNS FAILED"; timeout 5 bash -c "</dev/tcp/1.1.1.1/53" && echo "TCP BY IP OK" || echo "TCP BY IP FAILED"; timeout 5 bash -c "</dev/tcp/151.101.2.132/80" && echo "HTTP BY IP OK" || echo "HTTP BY IP FAILED"; } > /root/diag.txt 2>&1 || true'
+          sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d1.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" -v -x > /tmp/vb.log 2>&1 || true
+          echo "--- qemu network args"; grep -E 'netdev|passt|slirp|-nic ' /tmp/vb.log | cut -c1-200 | head -12
+          echo "--- inside the build, default host resolv.conf"; sudo virt-cat -a /tmp/d1.qcow2 /root/diag.txt
+          echo "--- again, with the host's real resolv.conf"
+          sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf; cat /etc/resolv.conf
+          sudo LIBGUESTFS_BACKEND=direct virt-builder debian-13 --size 8G --output /tmp/d2.qcow2 --format qcow2 --root-password disabled --network --run-command "$probe" > /tmp/vb2.log 2>&1 || true
+          sudo virt-cat -a /tmp/d2.qcow2 /root/diag.txt
+          exit 1
       - name: Build the image and run jobs in a VM
         run: sudo scripts/vm-test.sh
