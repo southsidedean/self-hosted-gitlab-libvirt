@@ -1,0 +1,5 @@
+# actionlint's list of GitHub's runners doesn't include ubuntu-26.04 yet, so it's named here.
+# Remove this file once a newer actionlint knows that runner.
+self-hosted-runner:
+  labels:
+    - ubuntu-26.04
