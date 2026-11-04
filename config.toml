@@ -3,7 +3,7 @@
 # The original, by GitLab, is licensed CC BY-SA 4.0. This adapted version is
 # licensed GPL-3.0; see LICENSE.
 
-iconcurrent = 1
+concurrent = 1
 check_interval = 0
 
 [session_server]
