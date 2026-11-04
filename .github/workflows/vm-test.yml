@@ -53,7 +53,7 @@ jobs:
           mkdir -p ~/apt-cache/partial
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends -o Acquire::Retries=3 -o Dir::Cache::Archives="$HOME/apt-cache" \
-            qemu-system-x86 qemu-utils ipxe-qemu libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base osinfo-db
+            qemu-system-x86 qemu-utils ipxe-qemu libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base osinfo-db passt
           sudo chown -R "$(id -u)" ~/apt-cache
       - name: Save the packages for later runs
         if: steps.packages.outputs.cache-hit != 'true'
