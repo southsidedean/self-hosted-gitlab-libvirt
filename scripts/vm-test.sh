@@ -1,100 +1,111 @@
 #!/usr/bin/env bash
 
-# Builds a small Debian 13 VM, boots it with libvirt and KVM, and logs in over
-# SSH. If this passes, the machine can run job VMs. It answers the plan's question
-# about GitHub's hosted runners, and it uses the same steps a job VM needs.
+# Runs the tutorial's real scripts against a real VM, the same way GitLab Runner
+# does: build the base image, install the driver, then prepare a job VM, run one
+# job that passes and one that fails, and clean up.
 #
-# Run it as root, on a machine you don't mind changing:
+# Run it as root from the top of the repository, on a test machine only. It writes
+# to libvirt's images folder and /opt/libvirt-driver, and it needs a machine with
+# no base image yet:
 #
 #   sudo scripts/vm-test.sh
 
 set -euo pipefail
 
-VM_NAME="vm-test"
-VM_IMAGE="/var/lib/libvirt/images/$VM_NAME.qcow2"
-SSH_KEY="/root/.ssh/vm-test-key"
+# The variables GitLab Runner gives the scripts. The two exit codes are different
+# from each other, so we can tell which one a script used.
+export CUSTOM_ENV_CI_RUNNER_ID=1
+export CUSTOM_ENV_CI_PROJECT_ID=2
+export CUSTOM_ENV_CI_CONCURRENT_PROJECT_ID=3
+export CUSTOM_ENV_CI_JOB_ID=4
+export SYSTEM_FAILURE_EXIT_CODE=70
+export BUILD_FAILURE_EXIT_CODE=80
+
+# The same names base.sh builds from those variables.
+VM_ID="runner-1-project-2-concurrent-3-job-4"
+IMAGES="/var/lib/libvirt/images"
 
 # If anything fails, show what libvirt knows about the VM and its network.
 show_state() {
     echo "== vm-test FAILED. What libvirt can see:"
     virsh list --all || true
-    virsh net-list --all || true
     virsh net-dhcp-leases default || true
-    virsh domifaddr "$VM_NAME" || true
+    virsh domifaddr "$VM_ID" || true
     echo "== The VM's own log, for SSH:"
-    virt-log -d "$VM_NAME" | grep -i "ssh" | tail -20 || true
+    virt-log -d "$VM_ID" | grep -i "ssh" | tail -20 || true
 }
 trap show_state ERR
 
 echo "== Is KVM available?"
 ls -l /dev/kvm
-virt-host-validate qemu || true
 
-echo "== Make a throwaway SSH key"
+echo "== Make the SSH key the scripts expect, if it's missing"
 mkdir -p /root/.ssh
-ssh-keygen -q -t ed25519 -N "" -f "$SSH_KEY"
+if [ ! -f /root/.ssh/id_rsa ]; then
+    ssh-keygen -q -t rsa -f /root/.ssh/id_rsa -N ""
+fi
 
-echo "== Build the image"
-virt-builder debian-13 \
-    --size 8G \
-    --output "$VM_IMAGE" \
-    --format qcow2 \
-    --hostname vm-test \
-    --network \
-    --install openssh-server \
-    --run-command "ssh-keygen -A" \
-    --ssh-inject "root:file:$SSH_KEY.pub" \
-    --run-command "sed -E 's/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"net.ifnames=0 biosdevname=0\"/' -i /etc/default/grub" \
-    --run-command "grub-mkconfig -o /boot/grub/grub.cfg" \
-    --run-command "echo 'auto eth0' >> /etc/network/interfaces" \
-    --run-command "echo 'allow-hotplug eth0' >> /etc/network/interfaces" \
-    --run-command "echo 'iface eth0 inet dhcp' >> /etc/network/interfaces" \
-    --root-password disabled
+echo "== Build the base image: runner-builder.sh"
+./runner-builder.sh
 
-echo "== Start libvirt's default network"
-virsh net-start default || true
+echo "== Install the driver: install-libvirt-driver.sh"
+./install-libvirt-driver.sh
 
-echo "== Boot the VM"
-virt-install \
-    --name "$VM_NAME" \
-    --osinfo detect=on,require=off \
-    --disk "$VM_IMAGE" \
-    --import \
-    --vcpus=2 \
-    --ram=2048 \
-    --network default \
-    --graphics none \
-    --noautoconsole
+echo "== Start libvirt's default network, if it isn't already running"
+if [ "$(virsh net-info default | awk '/^Active:/ {print $2}')" != "yes" ]; then
+    virsh net-start default
+fi
+
+echo "== Start a job VM: prepare.sh"
+/opt/libvirt-driver/prepare.sh < /dev/null
 
 echo "== Did the VM really use KVM?"
-virsh dumpxml "$VM_NAME" | grep "<domain type=" | grep "kvm"
+virsh dumpxml "$VM_ID" | grep "<domain type=" | grep "kvm"
 
-echo "== Wait for an IP address"
-VM_IP=""
-for i in $(seq 1 90); do
-    VM_IP=$(virsh -q domifaddr "$VM_NAME" | awk '{print $4}' | sed -E 's|/([0-9]+)?$||')
-    if [ -n "$VM_IP" ]; then
-        echo "The VM got an address after $i tries."
-        break
-    fi
-    sleep 2
-done
-if [ -z "$VM_IP" ]; then
-    echo "The VM never got an IP address."
+echo "== Run a job that should pass: run.sh"
+passing_job=$(mktemp)
+cat > "$passing_job" <<'EOF'
+set -e
+[ "$(whoami)" = "gitlab-runner" ]
+[ "$(systemd-detect-virt)" = "kvm" ]
+. /etc/os-release
+echo "$PRETTY_NAME"
+[ "$VERSION_CODENAME" = "trixie" ]
+sudo -n true
+terraform version
+gitlab-runner --version
+git --version
+git lfs version
+EOF
+/opt/libvirt-driver/run.sh "$passing_job"
+
+echo "== Run a job that should fail: run.sh"
+failing_job=$(mktemp)
+echo "exit 3" > "$failing_job"
+exit_code=0
+/opt/libvirt-driver/run.sh "$failing_job" || exit_code=$?
+if [ "$exit_code" -ne "$BUILD_FAILURE_EXIT_CODE" ]; then
+    echo "Expected exit code $BUILD_FAILURE_EXIT_CODE from the failing job, got $exit_code."
     show_state
     exit 1
 fi
 
-echo "== Wait for SSH, and run a command in the VM"
-for i in $(seq 1 60); do
-    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 \
-        "root@$VM_IP" "uname -a; . /etc/os-release; echo \$PRETTY_NAME; systemd-detect-virt"; then
-        echo "== vm-test passed, after $i SSH tries."
-        exit 0
-    fi
-    sleep 2
-done
+echo "== Remove the job VM: cleanup.sh"
+/opt/libvirt-driver/cleanup.sh
 
-echo "Couldn't log in to the VM over SSH."
-show_state
-exit 1
+echo "== Is everything gone, except the base image?"
+if virsh dominfo "$VM_ID" >/dev/null 2>&1; then
+    echo "The job VM is still there."
+    show_state
+    exit 1
+fi
+if [ -f "$IMAGES/$VM_ID.qcow2" ]; then
+    echo "The job VM's disk is still there."
+    exit 1
+fi
+if [ ! -f "$IMAGES/gitlab-runner-base.qcow2" ]; then
+    echo "The base image is gone."
+    exit 1
+fi
+
+echo "== vm-test passed."
