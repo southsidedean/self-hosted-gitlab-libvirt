@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 # /opt/libvirt-driver/base.sh
+# Adapted from GitLab's libvirt custom executor example:
+# https://docs.gitlab.com/runner/executors/custom_examples/libvirt/
+# The original, by GitLab, is licensed CC BY-SA 4.0. This adapted version is
+# licensed GPL-3.0; see LICENSE.
 
 VM_IMAGES_PATH="/var/lib/libvirt/images"
 BASE_VM_IMAGE="$VM_IMAGES_PATH/gitlab-runner-base.qcow2"

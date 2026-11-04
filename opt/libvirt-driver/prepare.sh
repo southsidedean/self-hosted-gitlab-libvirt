@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 # /opt/libvirt-driver/prepare.sh
+# Adapted from GitLab's libvirt custom executor example:
+# https://docs.gitlab.com/runner/executors/custom_examples/libvirt/
+# The original, by GitLab, is licensed CC BY-SA 4.0. This adapted version is
+# licensed GPL-3.0; see LICENSE.
 
 currentDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source ${currentDir}/base.sh # Get variables from base script.
