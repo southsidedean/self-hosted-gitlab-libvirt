@@ -9,6 +9,7 @@
 - Removed `libvirt-daemon-system` from the job VM image. Nothing in a job VM used it, and it added QEMU, Mesa, and hundreds of other packages. A job that starts VMs inside the job VM would have to install it.
 - Removed the `/opt/tf-state` share that every job VM mounted. GitLab-managed Terraform state replaces it.
 - `runner-builder.sh` no longer takes a password. The root password is random, and the README's steps catch up in 0.4.0.
+- Renamed `config.toml` to `config.example.toml`, and Git now ignores `config.toml`, so a real runner token can't be committed by accident.
 
 ## 0.2.0 (2026-11-04)
 

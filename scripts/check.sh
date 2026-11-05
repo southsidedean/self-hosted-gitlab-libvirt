@@ -30,7 +30,7 @@ if ! zizmor --offline --min-severity medium .github/workflows; then
 fi
 
 echo "== config: the 'iconcurrent' typo stays gone"
-if grep -n "iconcurrent" config.toml README.md; then
+if grep -n "iconcurrent" config.example.toml README.md; then
   echo "The setting is called 'concurrent'."
   failed=1
 fi

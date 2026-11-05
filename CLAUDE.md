@@ -4,7 +4,7 @@ This file guides Claude Code in this repository. It's public, so anything privat
 
 ## What this is
 
-A tutorial for building a "lab in a box" on one Linux machine: self-hosted GitLab, a GitLab Runner that starts a fresh KVM/libvirt VM for each CI/CD job, plus Terraform, Packer, Ansible, and Cockpit. `README.md` is the tutorial. `runner-builder.sh` builds the job VMs' base image, `install-libvirt-driver.sh` installs the scripts in `opt/libvirt-driver/`, and `config.toml` is the runner's example configuration.
+A tutorial for building a "lab in a box" on one Linux machine: self-hosted GitLab, a GitLab Runner that starts a fresh KVM/libvirt VM for each CI/CD job, plus Terraform, Packer, Ansible, and Cockpit. `README.md` is the tutorial. `runner-builder.sh` builds the job VMs' base image, `install-libvirt-driver.sh` installs the scripts in `opt/libvirt-driver/`, and `config.example.toml` is the runner's example configuration.
 
 ## Roadmap
 
