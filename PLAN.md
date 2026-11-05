@@ -20,7 +20,7 @@ Someone with one Linux machine can follow the README and the pages it links to, 
 | First tag | `v0.1.0` on `88b1413`, signed, with a release that lists the known problems (done 2026-11-03) |
 | Host OS for the tutorial | Ubuntu 26.04, with 24.04 as the fallback if testing finds a blocker. The scripts run on 26.04 (`vm-test.yml`), but the full tutorial is untested there |
 | GitLab edition | Community Edition in the tutorial and guides |
-| Job VM image | Debian 13. The full image builds and runs jobs (`vm-test.yml`) |
+| Job VM image | Debian 13. The full image builds and runs jobs (`vm-test.yml`). It has the libvirt client tools but not the daemon, because jobs don't start VMs inside the job VM |
 | Terraform state | GitLab-managed state replaces the `/opt/tf-state` share. Every job VM mounts the same folder today, and managed state adds locking and encryption. This undoes `e5df696` and `88b1413` |
 | Terraform | Stays the default, with a short note about OpenTofu. GitLab's docs now center on OpenTofu, so the tutorial writes its own `backend "http"` example |
 | Licenses | GPL-3.0 for the scripts (`LICENSE`), CC BY-SA 4.0 for the README, guides, and images (`LICENSE-docs`). The scripts that come from GitLab's docs say so in a short header |

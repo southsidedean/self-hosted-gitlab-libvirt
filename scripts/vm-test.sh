@@ -76,6 +76,9 @@ terraform version
 gitlab-runner --version
 git --version
 git lfs version
+virsh --version
+genisoimage --version
+xsltproc --version
 EOF
 /opt/libvirt-driver/run.sh "$passing_job"
 

@@ -33,7 +33,7 @@ virt-builder debian-13 \
     --format qcow2 \
     --hostname gitlab-runner-trixie \
     --network \
-    --install curl,gnupg,libvirt-clients,libvirt-daemon-system,genisoimage,xsltproc,sudo \
+    --install curl,gnupg,libvirt-clients,genisoimage,xsltproc,sudo \
     --run-command 'curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg' \
     --run-command 'gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint' \
     --run-command '. /etc/os-release && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $VERSION_CODENAME main" | tee /etc/apt/sources.list.d/hashicorp.list' \

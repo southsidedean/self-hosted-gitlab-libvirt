@@ -6,6 +6,7 @@
 - `prepare.sh` now waits up to 5 minutes for a VM's address and for SSH, up from 30 seconds each, and the scripts always use the system libvirt instance.
 - `runner-builder.sh` and `prepare.sh` stop with a clear message when the SSH key is missing.
 - The job VM image is now Debian 13, and a weekly test builds it and runs real jobs in it.
+- Removed `libvirt-daemon-system` from the job VM image. Nothing in a job VM used it, and it added QEMU, Mesa, and hundreds of other packages. A job that starts VMs inside the job VM would have to install it.
 - Removed the `/opt/tf-state` share that every job VM mounted. GitLab-managed Terraform state replaces it.
 - `runner-builder.sh` no longer takes a password. The root password is random, and the README's steps catch up in 0.4.0.
 
