@@ -73,7 +73,7 @@ Each test lands in the same pull request as the fix it covers.
   - Update `--os-variant` and the host name.
 - Make `--root-password random` the default. Nothing needs the password once the README's console step is gone, so there's no argument to check or leak.
 - Have the scripts stop with a clear message when the SSH key is missing.
-- Finish moving to GitLab-managed Terraform state. The share is already gone from `runner-builder.sh` and `prepare.sh`. Add a one-sentence note on moving existing state, and a tested `backend "http"` example using `CI_JOB_TOKEN`.
+- Finish moving to GitLab-managed Terraform state. The share is already gone from `runner-builder.sh` and `prepare.sh`. Add a one-sentence note on moving existing state, and a tested `backend "http"` example using `CI_JOB_TOKEN`. Testing it takes a real GitLab, so this lands after the test VM exists.
 - Rename `config.toml` to `config.example.toml`, add `config.toml` to `.gitignore`, and update every reference in the same pull request.
 - Write `docs/release-checklist.md`, including the test VM's network, how a job VM finds GitLab, how to avoid a clash between the two layers' default libvirt networks, a check that the weekly run is still enabled, and a hand check of the links.
 
