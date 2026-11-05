@@ -6,6 +6,12 @@ on:
     paths:
       - .github/workflows/vm-test.yml
       - scripts/vm-test.sh
+      - runner-builder.sh
+      - install-libvirt-driver.sh
+      - opt/libvirt-driver/**
+  # Weekly, so a change in Debian, Ubuntu, or the package repositories shows up.
+  schedule:
+    - cron: "41 6 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -47,7 +53,7 @@ jobs:
           mkdir -p ~/apt-cache/partial
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends -o Acquire::Retries=3 -o Dir::Cache::Archives="$HOME/apt-cache" \
-            qemu-system-x86 qemu-utils ipxe-qemu libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base
+            qemu-system-x86 qemu-utils ipxe-qemu libvirt-daemon-system libvirt-clients virtinst guestfs-tools dnsmasq-base osinfo-db
           sudo chown -R "$(id -u)" ~/apt-cache
       - name: Save the packages for later runs
         if: steps.packages.outputs.cache-hit != 'true'
@@ -55,5 +61,9 @@ jobs:
         with:
           path: ~/apt-cache
           key: vm-test-debs-${{ steps.week.outputs.week }}
-      - name: Build and boot a VM
+      # GitHub's runner image comes with passt. libguestfs uses it when it's there, and with it
+      # the image build gets no network, so the build uses QEMU's own networking.
+      - name: Remove passt
+        run: sudo apt-get remove -y -q passt
+      - name: Build the image and run jobs in a VM
         run: sudo scripts/vm-test.sh

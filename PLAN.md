@@ -18,9 +18,9 @@ Someone with one Linux machine can follow the README and the pages it links to, 
 | Question | Decision |
 |---|---|
 | First tag | `v0.1.0` on `88b1413`, signed, with a release that lists the known problems (done 2026-11-03) |
-| Host OS for the tutorial | Ubuntu 26.04, with 24.04 as the fallback if testing finds a blocker. `virt-builder` and libvirt build and boot a VM on 26.04 (`vm-test.yml`), but the full tutorial is untested there |
+| Host OS for the tutorial | Ubuntu 26.04, with 24.04 as the fallback if testing finds a blocker. The scripts run on 26.04 (`vm-test.yml`), but the full tutorial is untested there |
 | GitLab edition | Community Edition in the tutorial and guides |
-| Job VM image | Debian 13, with Debian 12 as the fallback only if the build fails |
+| Job VM image | Debian 13. The full image builds and runs jobs (`vm-test.yml`). It has the libvirt client tools but not the daemon, because jobs don't start VMs inside the job VM |
 | Terraform state | GitLab-managed state replaces the `/opt/tf-state` share. Every job VM mounts the same folder today, and managed state adds locking and encryption. This undoes `e5df696` and `88b1413` |
 | Terraform | Stays the default, with a short note about OpenTofu. GitLab's docs now center on OpenTofu, so the tutorial writes its own `backend "http"` example |
 | Licenses | GPL-3.0 for the scripts (`LICENSE`), CC BY-SA 4.0 for the README, guides, and images (`LICENSE-docs`). The scripts that come from GitLab's docs say so in a short header |
@@ -73,9 +73,8 @@ Each test lands in the same pull request as the fix it covers.
   - Update `--os-variant` and the host name.
 - Make `--root-password random` the default. Nothing needs the password once the README's console step is gone, so there's no argument to check or leak.
 - Have the scripts stop with a clear message when the SSH key is missing.
-- Replace the `/opt/tf-state` share with GitLab-managed Terraform state. Remove its lines from `runner-builder.sh` and `prepare.sh`, including `numa` and `memorybacking` if nothing else needs them. Add a one-sentence note on moving existing state, and a tested `backend "http"` example using `CI_JOB_TOKEN`.
+- Finish moving to GitLab-managed Terraform state. The share is already gone from `runner-builder.sh` and `prepare.sh`. Add a one-sentence note on moving existing state, and a tested `backend "http"` example using `CI_JOB_TOKEN`.
 - Rename `config.toml` to `config.example.toml`, add `config.toml` to `.gitignore`, and update every reference in the same pull request.
-- Grow `.github/workflows/vm-test.yml` to run the real scripts, then give it its weekly schedule. It boots a small test VM today.
 - Write `docs/release-checklist.md`, including the test VM's network, how a job VM finds GitLab, how to avoid a clash between the two layers' default libvirt networks, a check that the weekly run is still enabled, and a hand check of the links.
 
 Done when: `checks` passes, and the sample job in the first-pipeline guide goes green on a test install, following the checklist.
@@ -141,7 +140,7 @@ The lab doesn't need another major service. These stay out so it stays a simple 
 | A few `grep` lines | `iconcurrent` coming back in the example config or the README | 0.2.0 |
 | Script tests | The cleanup order and failure exit codes, using fake `virsh`, `ssh`, `qemu-img`, and `virt-install` commands | 0.3.0 |
 
-`vm-test.yml` is separate and isn't required. It runs weekly and by hand on `ubuntu-26.04`, building the image and running `prepare.sh`, `run.sh`, and `cleanup.sh` with fake CI variables. It's the most valuable test here: shellcheck found none of the bugs listed in the `v0.1.0` release, and fake commands catch only the cleanup order.
+`vm-test.yml` is separate and isn't required. It runs weekly, by hand, and on pull requests that change the scripts, on `ubuntu-26.04`, building the image and running `prepare.sh`, `run.sh`, and `cleanup.sh` with fake CI variables. It's the most valuable test here: shellcheck found none of the bugs listed in the `v0.1.0` release, and fake commands catch only the cleanup order.
 
 GitHub turns off scheduled workflows after 60 days without activity in a public repository, and this one can be quiet for a long time. The release checklist confirms the weekly run is still on. Monthly Dependabot merges may keep it alive, though that isn't confirmed.
 
@@ -165,4 +164,5 @@ The test VM isn't created until the 0.3.0 work needs it. The default libvirt net
 ## Open questions
 
 - **Does `ufw` get in the way of the job VMs?** `docs/security.md` turns on a firewall, and `libvirt` manages firewall rules of its own. Check that job VMs still get an address and reach GitLab.
-- **Does the full Debian 13 image work as it's set up?** A small test image builds and boots, and it gets an address using the `/etc/network/interfaces` lines. The HashiCorp and GitLab Runner repositories exist, but the full build, with their packages, hasn't been run.
+- **Does `passt` break `virt-builder --network` on a normal Ubuntu host?** GitHub's runner image comes with `passt`. With it installed, `libguestfs` uses it and the image build gets no network, so `vm-test.yml` removes it. Ubuntu 26.04 only suggests `passt`, so a normal host may not have it. Check on the test install, and tell readers to remove it if needed.
+- **Is Ubuntu 24.04 still a workable fallback?** On GitHub's 24.04 runner, the image build failed with `passt` (a PID file error), and without it the build had no DHCP client. If 24.04 stays the fallback, it needs its own test.
