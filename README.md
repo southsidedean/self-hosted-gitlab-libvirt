@@ -219,7 +219,7 @@ virsh console runner--project--concurrent--job-
 
 You will log in as `root`, using the password you set when you build the shared runner image.
 
-Once you're logged in, you will want to edit `/etc/gitlab-runner/config.toml` and replace the contents with the configuration below.  Replace the URL with your URL, and you will put the token we're going to get in the next step in as the token value, so keep this open after you've pasted and saved the contents.  I've also provided this in a file in the repository (`config.toml`) if you'd like to use that.
+Once you're logged in, you will want to edit `/etc/gitlab-runner/config.toml` and replace the contents with the configuration below.  Replace the URL with your URL, and you will put the token we're going to get in the next step in as the token value, so keep this open after you've pasted and saved the contents.  I've also provided this in a file in the repository (`config.example.toml`) if you'd like to use that.
 
 Contents of `/etc/gitlab-runner/config.toml`:
 ```bash

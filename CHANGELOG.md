@@ -10,6 +10,8 @@
 - Removed the `/opt/tf-state` share that every job VM mounted. GitLab-managed Terraform state replaces it.
 - `runner-builder.sh` no longer takes a password. The root password is random, and the README's steps catch up in 0.4.0.
 - Renamed `config.toml` to `config.example.toml`, and Git now ignores `config.toml`, so a real runner token can't be committed by accident.
+- Added `examples/terraform-state/`, a tested example of keeping Terraform state in GitLab using the job's own token.
+- Added `docs/release-checklist.md`. On a full test install following these steps, on Ubuntu 26.04 with GitLab Community Edition, a sample job went green, with `ufw` on and after a reboot.
 
 ## 0.2.0 (2026-11-04)
 

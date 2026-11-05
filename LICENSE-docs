@@ -1,6 +1,7 @@
 The README, the guides in docs/, and the images in images/ are licensed under the
 Creative Commons Attribution-ShareAlike 4.0 International license, below.
-The scripts and config.example.toml are licensed under GPL-3.0; see LICENSE.
+The scripts, the example code in examples/, and config.example.toml are licensed
+under GPL-3.0; see LICENSE.
 
 Copyright (c) 2023-2026 Tom Dean
 

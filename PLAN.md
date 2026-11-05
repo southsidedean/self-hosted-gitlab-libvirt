@@ -1,6 +1,6 @@
 # Plan: refreshing the lab in a box
 
-Status: 0.3.0 in progress (2026-11-04). `v0.1.0` is the 2023 tutorial's last version. First drafts of the guides are on the `guide-draft` branch.
+Status: 0.3.0 ready to release (2026-11-05). `v0.1.0` is the 2023 tutorial's last version. First drafts of the guides are on the `guide-draft` branch.
 
 ## Goal
 
@@ -73,7 +73,7 @@ Each test lands in the same pull request as the fix it covers.
   - Update `--os-variant` and the host name.
 - Make `--root-password random` the default. Nothing needs the password once the README's console step is gone, so there's no argument to check or leak.
 - Have the scripts stop with a clear message when the SSH key is missing.
-- Finish moving to GitLab-managed Terraform state. The share is already gone from `runner-builder.sh` and `prepare.sh`. Add a one-sentence note on moving existing state, and a tested `backend "http"` example using `CI_JOB_TOKEN`. Testing it takes a real GitLab, so this lands after the test VM exists.
+- Finish moving to GitLab-managed Terraform state. The share is already gone from `runner-builder.sh` and `prepare.sh`. Add a one-sentence note on moving existing state, and a tested `backend "http"` example using `CI_JOB_TOKEN`, in `examples/terraform-state/`.
 - Rename `config.toml` to `config.example.toml`, add `config.toml` to `.gitignore`, and update every reference in the same pull request.
 - Write `docs/release-checklist.md`, including the test VM's network, how a job VM finds GitLab, how to avoid a clash between the two layers' default libvirt networks, a check that the weekly run is still enabled, and a hand check of the links.
 
@@ -85,8 +85,9 @@ Done when: `checks` passes, and the sample job in the first-pipeline guide goes 
 
 - Correct the runner steps: GitLab Runner and the driver scripts run on the host.
 - Remove the password from the `runner-builder.sh` step, and the console login that used it. The script has used a random password since 0.3.0.
-- Choose one way to set up the runner, and test it. Today, pasting a config with a fake token and then running `gitlab-runner register` leaves two entries.
-- Move to the current registration flow: create the runner in GitLab with **Run untagged** selected, then register with its `glrt-` token.
+- Choose one way to set up the runner, and test it. Today, pasting a config with a fake token and then running `gitlab-runner register` leaves two entries. `gitlab-runner register --non-interactive`, as in `docs/release-checklist.md`, leaves one, and passed the 0.3.0 test.
+- Move to the current registration flow: create the runner in GitLab with **Run untagged** selected, then register with its `glrt-` token. The 0.3.0 test created the runner through GitLab's API, so walk through the screens by hand.
+- List the host's packages: `qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients virtinst guestfs-tools`.
 - Say "instance runner" where GitLab now does.
 - Document everything the host needs, including the exact command for the SSH key. The scripts expect `/root/.ssh/id_rsa`, and newer `ssh-keygen` versions default to ed25519.
 - Update the steps to Ubuntu 26.04, leaving the story as written.
@@ -159,10 +160,18 @@ GitHub turns off scheduled workflows after 60 days without activity in a public 
 2. **Weekly:** `checks` and `vm-test.yml`.
 3. **For each release:** a full install in a disposable VM with nested virtualization, following `docs/release-checklist.md`. A full GitLab install is too heavy for routine CI.
 
-The test VM isn't created until the 0.3.0 work needs it. The default libvirt network uses NAT, so Let's Encrypt and port forwarding can't be tested this way. Those steps stay a manual check on a machine with a real DNS name.
+The default libvirt network uses NAT, so Let's Encrypt and port forwarding can't be tested this way. Those steps stay a manual check on a machine with a real DNS name.
+
+### What the 0.3.0 test install found
+
+Ubuntu 26.04 with GitLab Community Edition 19.5, in a nested VM:
+
+- **`ufw` doesn't get in the way of the job VMs.** With the firewall on, before and after a reboot, a job VM got an address, found GitLab by name, and reached both GitLab and the Internet, and the firewall logged no blocked traffic on the libvirt network.
+- **`passt` isn't a problem on a normal host.** Installing the host's packages doesn't bring it in, and the image builds. It's only `vm-test.yml` that has to remove it. The checklist still checks for it.
+- **The two layers' networks don't clash.** `libvirt` saw that its usual range was taken, and picked the next one by itself.
+- **Job VMs find GitLab through the host's `/etc/hosts`.** With the name only in that file, pointing at the host's libvirt address, job VMs found it through the libvirt network's DNS, without restarting the network.
+- **GitLab may not start by itself when the URL is `gitlab.example.com`.** That's the placeholder in its default config. The installer said no valid host name was found, and `gitlab-ctl reconfigure` started it. A real name wasn't tested.
 
 ## Open questions
 
-- **Does `ufw` get in the way of the job VMs?** `docs/security.md` turns on a firewall, and `libvirt` manages firewall rules of its own. Check that job VMs still get an address and reach GitLab.
-- **Does `passt` break `virt-builder --network` on a normal Ubuntu host?** GitHub's runner image comes with `passt`. With it installed, `libguestfs` uses it and the image build gets no network, so `vm-test.yml` removes it. Ubuntu 26.04 only suggests `passt`, so a normal host may not have it. Check on the test install, and tell readers to remove it if needed.
 - **Is Ubuntu 24.04 still a workable fallback?** On GitHub's 24.04 runner, the image build failed with `passt` (a PID file error), and without it the build had no DHCP client. If 24.04 stays the fallback, it needs its own test.
