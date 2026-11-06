@@ -96,7 +96,8 @@ Done when: `checks` passes, and the sample job in the first-pipeline guide goes 
 - Add the "2026 update" note, which replaces the warning at the top.
 - Add one short warning to check sign-up settings, since anyone with an account can run jobs on the machine.
 - Move the Cockpit port change to a systemd override, starting with an empty `ListenStream=`.
-- Replace the GitLab 15.7 link that returns a 404, and hand-check the rest.
+- Tell readers that Cockpit doesn't allow `root` to log in by default.
+- Replace the GitLab 15.7 link that returns a 404, and hand-check the rest. The RHEL 6 storage pool link becomes libvirt's own page. Red Hat blocks automated browsers, so the RHEL 8 link stays a hand check.
 - Replace the host name in the README's sample output.
 - Retake the screenshots, with plain file names and sanitized contents. Remove `images/archive/` once nothing links to it.
 
