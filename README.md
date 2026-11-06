@@ -151,22 +151,22 @@ Create a new project, set it up, add some code, give GitLab a workout.
 ***If you're not looking to do CI/CD, you can skip the next step, but I don't know why you wouldn't want to!***
 
 
-### GitLab: Shared Runner: Information
+### GitLab: Instance Runner: Information
 
-[GitLab: The scope of runners](https://docs.gitlab.com/ee/ci/runners/runners_scope.html)
+[GitLab: Manage runners](https://docs.gitlab.com/ci/runners/runners_scope/)
 
 In order to execute our GitLab CI/CD jobs, we're going to need a runner.  I've decided to use KVM/`libvirt` as the environment to "*run my runner*", and followed the instructions in the GitLab docs referenced below.
+
+GitLab Runner itself runs on the host.  For each CI/CD job, it starts a fresh virtual machine from a base image, runs the job in it, and removes it when the job is done.
 
 If you'd like to know more about GitLab runners, check out the link above.
 
 
-### GitLab Shared Runner: Configure KVM Runner Instance
+### GitLab Instance Runner: Build the Job VM Image
 
-[Using libvirt with the Custom executor](https://docs.gitlab.com/runner/executors/custom_examples/libvirt.html)
+[Using libvirt with the Custom executor](https://docs.gitlab.com/runner/executors/custom_examples/libvirt/)
 
-[Install GitLab Runner](https://docs.gitlab.com/runner/install/)
-
-Before we can launch a runner, we'll need to build a virtual machine image for our runner.  We're going to use `virt-builder`, as specified in the **"Using libvirt with the Custom executor"** instructions above.  You can follow the documents like I did, and should get a good result.  I have included assets and scripts in this repository to speed up deploying the `libvirt-driver` (`install-libvirt-driver.sh`) and building the runner image (`runner-builder.sh`).  Feel free to use them if you'd like.
+Before we can run a job, we'll need to build a virtual machine image for our job VMs.  We're going to use `virt-builder`, as specified in the **"Using libvirt with the Custom executor"** instructions above.  You can follow the documents like I did, and should get a good result.  I have included assets and scripts in this repository to speed up deploying the `libvirt-driver` (`install-libvirt-driver.sh`) and building the image (`runner-builder.sh`).  Feel free to use them if you'd like.
 
 #### If you'd like to use the scripts, do the following:
 
@@ -181,99 +181,84 @@ This will create the `/opt/libvirt-driver` directory, copy the `libvirt-driver` 
 
 You should see a result similar to this:
 ```bash
-tdean@monolith:~$ ls -al /opt/libvirt-driver/
+tom@lab-host:~$ ls -al /opt/libvirt-driver/
 total 24
-drwxr-xr-x 2 root root 4096 Feb 20 20:56 .
-drwxr-xr-x 4 root root 4096 Feb 20 20:55 ..
--rwxr-xr-x 1 root root  435 Feb 20 20:55 base.sh
--rwxr-xr-x 1 root root  364 Feb 20 20:56 cleanup.sh
--rwxr-xr-x 1 root root 1570 Feb 20 20:55 prepare.sh
--rwxr-xr-x 1 root root  452 Feb 20 20:56 run.sh
+drwxr-xr-x 2 root root 4096 Nov  5 15:51 .
+drwxr-xr-x 4 root root 4096 Nov  5 15:53 ..
+-rwxr-xr-x 1 root root  936 Nov  5 15:51 base.sh
+-rwxr-xr-x 1 root root 1518 Nov  5 15:51 cleanup.sh
+-rwxr-xr-x 1 root root 2182 Nov  5 15:51 prepare.sh
+-rwxr-xr-x 1 root root  687 Nov  5 15:51 run.sh
 ```
 
-Next, we'll build the GitLab shared runner, using the script.  You should replace **<<ROOT_PASSWORD>>** with your desired `root` password for your shared runner virtual machine.  If you'd like to have `virt-builder` assign a random password, edit the script and make changes as described in the comments in the script.
-
-Build shared runner image:
+The runner reaches each job VM over SSH, using a key that belongs to `root` on the host.  If you don't have one at `/root/.ssh/id_rsa`, create it:
 ```bash
-sudo ./runner-builder.sh <<ROOT_PASSWORD>>
+sudo ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ""
 ```
 
-You will use the `/opt/libvirt-driver/prepare.sh` script to launch your shared runner virtual machine.  Once the shared runner is up, you can check its status with:
+Next, we'll build the image, using the script.  `virt-builder` gives it a random `root` password, which we won't need, since the runner uses the SSH key.
+
+Build job VM image:
 ```bash
-virsh list --all
+sudo ./runner-builder.sh
 ```
 
-You should see something similar to the following:
+***You don't need to start a virtual machine yourself.  The runner does that for each job.***
 
-![Shared Runner: Running!](images/archive/Screen%20Shot%202023-02-20%20at%203.21.17%20PM.png)
 
-You will need to log in to the shared runner instance using `virsh-console`:
+### GitLab Instance Runner: Install GitLab Runner
+
+[Install GitLab Runner](https://docs.gitlab.com/runner/install/linux-repository/)
+
+We'll install GitLab Runner on the host.  Add GitLab's repository:
 ```bash
-virsh console <<instance_name>>
+curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" -o script.deb.sh
 ```
-
-For example:
 ```bash
-virsh console runner--project--concurrent--job-
+sudo bash script.deb.sh
 ```
 
-You will log in as `root`, using the password you set when you build the shared runner image.
-
-Once you're logged in, you will want to edit `/etc/gitlab-runner/config.toml` and replace the contents with the configuration below.  Replace the URL with your URL, and you will put the token we're going to get in the next step in as the token value, so keep this open after you've pasted and saved the contents.  I've also provided this in a file in the repository (`config.example.toml`) if you'd like to use that.
-
-Contents of `/etc/gitlab-runner/config.toml`:
+Install GitLab Runner:
 ```bash
-concurrent = 1
-check_interval = 0
-
-[session_server]
-  session_timeout = 1800
-
-[[runners]]
-  name = "libvirt-driver"
-  url = "https://gitlab.example.com:PORT/" # Edit to match your URL, with PORT if non-standard
-  token = "xxxxx" # Edit to use the token your GitLab instance provides for your shared runner
-  executor = "custom"
-  builds_dir = "/home/gitlab-runner/builds"
-  cache_dir = "/home/gitlab-runner/cache"
-  [runners.custom_build_dir]
-  [runners.cache]
-    [runners.cache.s3]
-    [runners.cache.gcs]
-  [runners.custom]
-    prepare_exec = "/opt/libvirt-driver/prepare.sh" # Path to a bash script to create VM.
-    run_exec = "/opt/libvirt-driver/run.sh" # Path to a bash script to run script inside of VM over ssh.
-    cleanup_exec = "/opt/libvirt-driver/cleanup.sh" # Path to a bash script to delete VM and disks.
+sudo apt-get install -y gitlab-runner
 ```
 
-***Let's go ahead and register our shared runner with our GitLab instance!***
+***Let's go ahead and register our instance runner with our GitLab instance!***
 
 
-### GitLab Shared Runner: Register Your Shared Runner
+### GitLab Instance Runner: Register Your Instance Runner
 
-[GitLab: Registering runners](https://docs.gitlab.com/15.7/runner/register/)
+[GitLab: Registering runners](https://docs.gitlab.com/runner/register/)
 
-In order to utilize our shared runner, we must register it with our GitLab instance.  As a GitLab Administrator, go to the **Admin Area**, then choose **CI/CD --> Runners**.  You will see a blue drop-down menu in the upper right hand area of the screen, **Register an instance runner**.  Click on this to drop down the menu shown below, and select **Show runner installation and registration instructions**.
+In order to utilize our instance runner, we must create it in GitLab and then register it.  As a GitLab Administrator, select **Admin** in the upper-right corner, then choose **CI/CD --> Runners**.  Select **Create instance runner**, select **Run untagged jobs**, then select **Create runner**.  GitLab will show you a token that starts with `glrt-`.  It only displays for a short time, so copy it now, and treat it like a password.
 
-![Registration Information: Link](images/archive/Screen%20Shot%202023-02-20%20at%203.55.58%20PM.png)
-
-Get the <<URL>> and <<TOKEN>> information, then hop back to the GitLab runner, and as `root`, run:
+GitLab's page shows a shorter command, which asks you questions, but we'll use this one, which has all the answers.  Hop back to your host, and run the following command.  Replace the <<URL>> and <<TOKEN>> values with your values.  Your job VMs have to be able to reach this URL, because that's where they get your code from.
 
 ```bash
-gitlab-runner register --url <<URL>> --registration-token <<TOKEN>>
+sudo gitlab-runner register --non-interactive \
+  --url <<URL>> --token <<TOKEN>> \
+  --name libvirt-driver --executor custom \
+  --builds-dir /home/gitlab-runner/builds --cache-dir /home/gitlab-runner/cache \
+  --custom-prepare-exec /opt/libvirt-driver/prepare.sh \
+  --custom-run-exec /opt/libvirt-driver/run.sh \
+  --custom-cleanup-exec /opt/libvirt-driver/cleanup.sh
 ```
 
-Replace the <<URL>> and <<TOKEN>> vaules with your values.  Follow the prompts and provide the proper answers based on your configuration.  When the process is complete, you should see the shared runner appear (after a short delay, possibly).
+This writes your settings to `/etc/gitlab-runner/config.toml`.  I've also provided an example in the repository (`config.example.toml`) if you'd like to compare.  When the process is complete, restart GitLab Runner, and you should see the instance runner appear (after a short delay, possibly).
+
+```bash
+sudo systemctl restart gitlab-runner
+```
 
 ![Shared Runner Registered!](images/archive/Screen%20Shot%202023-02-20%20at%203.18.06%20PM.png)
 
-If you have any projects you'd like to enable your shared runner for, navigate to the projects, go to **Settings --> CI/CD** and then choose **Expand** in the **Runners** section.  You can enable and check the status of shared runners for that project here.
+If you have any projects you'd like to enable your instance runner for, navigate to the projects, go to **Settings --> CI/CD** and then expand the **Runners** section.  You can enable and check the status of instance runners for that project here.
 
 ![Shared Runner in Project](images/archive/Screen%20Shot%202023-02-20%20at%203.18.57%20PM.png)
 
-We're not going to dive into CI/CD and shared runners right now, but if you know all that stuff, feel free to test and debug your runnner now.
+We're not going to dive into CI/CD and instance runners right now, but if you know all that stuff, feel free to test and debug your runnner now.
 
-***With GitLab and the shared runner installed, configured and working, the bulk of the work is done.  Let's finish the rest!***
+***With GitLab and the instance runner installed, configured and working, the bulk of the work is done.  Let's finish the rest!***
 
 
 ## Terraform/Packer: Install

@@ -60,12 +60,12 @@ We'll call the test VM `lab-host`, and the machine it runs on the outer host.
   ```bash
   sudo gitlab-ctl reconfigure
   ```
-- [ ] Log in as `root`, with the password in `/etc/gitlab/initial_root_password`.
+- [ ] Log in as `root`, with the password in `/etc/gitlab/initial_root_password`.  GitLab shows two setup pages on the first login, and you can select **Skip** on both.
 
 ## Set Up the Runner
 
 - [ ] Install GitLab Runner on `lab-host`, from [GitLab's repository](https://docs.gitlab.com/runner/install/linux-repository/).
-- [ ] In GitLab, go to **Admin --> CI/CD --> Runners**, create an instance runner with **Run untagged** selected, and copy its `glrt-` token.
+- [ ] In GitLab, go to **Admin --> CI/CD --> Runners**, create an instance runner with **Run untagged jobs** selected, and copy its `glrt-` token.  It only displays for a short time.
 - [ ] Register the runner, and restart it:
   ```bash
   sudo gitlab-runner register --non-interactive \
