@@ -3,6 +3,10 @@
 ## 0.4.0 (unreleased)
 
 - Rewrote the README's runner steps to match the scripts and current GitLab. GitLab Runner runs on the host, there's no password or console login, and you register with a `glrt-` token.
+- Moved the README's steps to Ubuntu 26.04, and listed the host's packages. The introduction and the story stay as written, and a 2026 note replaces the warning at the top.
+- Added a warning to check sign-up settings, since anyone with an account can run jobs on the machine.
+- Moved Cockpit's port change to a `systemd` override, which a package update won't overwrite, and noted that Cockpit doesn't allow `root` to log in by default.
+- Replaced the RHEL 6 storage pool link with libvirt's own page, and fixed a few typos.
 
 ## 0.3.0 (2026-11-05)
 

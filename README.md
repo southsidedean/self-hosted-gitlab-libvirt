@@ -3,11 +3,11 @@
   <img src="images/gitlab-libvirt-logo.svg" alt="self-hosted-gitlab-libvirt logo: a pipeline of three stages" width="88">
 </picture>
 
-# Deploying a Self-Hosted GitLab Instance With a KVM GitLab Shared Runner on Ubuntu Linux 22.04
+# Deploying a Self-Hosted GitLab Instance With a KVM GitLab Instance Runner on Ubuntu Linux 26.04
 
 ### Tom Dean: [LinkedIn](https://www.linkedin.com/in/tomdeanjr/)
 
-> **Heads up (November 2026):** *I wrote this tutorial in 2023, and some of the steps are out of date.  I'm refreshing it now, so check [the plan](PLAN.md) to see where that stands before you follow along.*
+> **2026 update:** *I wrote this tutorial in 2023, when I built this lab on Ubuntu 22.04, and the story is still that build.  The steps are now for Ubuntu 26.04 and GitLab 19.5, with Debian 13 job VMs and GitLab's current runner setup.  I'm still testing the full walkthrough, so check [the plan](PLAN.md) to see where that stands.*
 
 ## Introduction
 
@@ -54,7 +54,7 @@ I wanted my "lab in a box" to have the following functionality:
     - Place to do primary development
         - Release projects/content on GitHub
     - Local GitLab instance
-    - Publically accessible (*by me*)
+    - Publicly accessible (*by me*)
     - CI/CD
         - KVM/`libvirt` runner
 - Terraform
@@ -75,15 +75,20 @@ I wanted my "lab in a box" to have the following functionality:
 
 [Ubuntu: libvirt](https://ubuntu.com/server/docs/virtualization-libvirt)
 
-[How To Install KVM Hypervisor on Ubuntu 22.04|20.04](https://computingforgeeks.com/install-kvm-hypervisor-on-ubuntu-linux/)
+[Install KVM on Ubuntu 24.04 / 22.04](https://computingforgeeks.com/install-kvm-hypervisor-on-ubuntu-linux/)
 
 [Red Hat: Getting started with virtualization](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_virtualization/getting-started-with-virtualization-in-rhel-8_configuring-and-managing-virtualization#enabling-virtualization-in-rhel8_virt-getting-started)
 
-[Creating a Directory-based Storage Pool with virsh](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/virtualization_administration_guide/sect-virtualization-storage_pools-creating-local_directories-virsh)
+[libvirt: Storage Management: Directory pool](https://libvirt.org/storage.html#directory-pool)
 
-At the bottom of the "lab in a box" stack, our foundation, is `libvirt`.  We're going to use it to execute our project workloads, including the shared GitLab runner we use for CI/CD.
+At the bottom of the "lab in a box" stack, our foundation, is `libvirt`.  We're going to use it to execute our project workloads, including the job VMs for our GitLab runner.
 
 The exact set of steps required to install the KVM/`libvirt` components will vary, based on your Linux distribution.  I've included links for Ubuntu and RHEL variants above, but you should be able to Google it and get instructions.  Remember, make sure you can install GitLab on your distribution as well.  If you're using some obscure distribution, you might be out of luck.
+
+On Ubuntu 26.04, install these packages:
+```
+sudo apt-get update ; sudo apt-get install -y qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients virtinst guestfs-tools
+```
 
 Once you have KVM/`libvirt` installed, let's give it a test:
 ```
@@ -97,11 +102,11 @@ Let's make sure we can build virtual machine images:
 virt-builder --help
 ```
 
-We will use the `virt-builder` utility to build the image for our GitLab shared runner VM.
+We will use the `virt-builder` utility to build the image for our job VMs.
 
 Let's check our system for virtual machines:
 ```
-virsh list --all
+sudo virsh list --all
 ```
 
 ***We shouldn't see any virtual machines at this point, unless you have some running already, of course.  We can move on to setting up our GitLab instance.***
@@ -144,7 +149,9 @@ Once installation is complete, head over to your web browser, plug in the URL to
 
 ![GitLab Achieved!](images/archive/GitLab_Achieved.png)
 
-At this point, you'll want to log in as `root`, change the default password that was supplied at installation time (*you saved that, right?*), and create a local GitLab user for yourself (and give that user Admin permissions, if desired).
+At this point, you'll want to log in as `root`, change the default password that was supplied at installation time (*you saved that, right?*), and create a local GitLab user for yourself (and give that user Admin permissions, if desired).  If you didn't save the password, it's in `/etc/gitlab/initial_root_password`, which GitLab removes after 24 hours.  GitLab shows two setup pages on the first login, and you can select **Skip** on both.
+
+Before you go any further, check your sign-up settings.  Anyone with an account can run jobs on this machine, and by default, anyone who reaches your GitLab can request an account for an administrator to approve.  Select **Admin**, choose **Settings --> General**, and expand **New user account restrictions**.  If it's only you, clear **Allow new user accounts**, then select **Save changes**.
 
 Create a new project, set it up, add some code, give GitLab a workout.
 
@@ -256,7 +263,7 @@ If you have any projects you'd like to enable your instance runner for, navigate
 
 ![Shared Runner in Project](images/archive/Screen%20Shot%202023-02-20%20at%203.18.57%20PM.png)
 
-We're not going to dive into CI/CD and instance runners right now, but if you know all that stuff, feel free to test and debug your runnner now.
+We're not going to dive into CI/CD and instance runners right now, but if you know all that stuff, feel free to test and debug your runner now.
 
 ***With GitLab and the instance runner installed, configured and working, the bulk of the work is done.  Let's finish the rest!***
 
@@ -273,7 +280,7 @@ I've written quite a bit of infrastructure-as-code in Terraform, using AWS, for 
 
 I've also used Packer to build AMIs in the past, so I installed it, for when I start building in the Cloud.  I might explore using it to build local VM images.  For now, I've been using `virt-builder`.
 
-To install these, you first need to add the repositories for Hashicorp, as described in the link above.  Follow the steps for your operating system.  Once the repositiories have been added, you can install Terraform and Packer as instructed in the links above.
+To install these, you first need to add the repositories for Hashicorp, as described in the link above.  Follow the steps for your operating system.  Once the repositories have been added, you can install Terraform and Packer as instructed in the links above.
 
 You can verify your installation by checking the versions of Terraform and Packer:
 ```
@@ -288,7 +295,7 @@ You should get the installed versions back.
 
 ## Ansible: Install
 
-[How To Install and Configure Ansible on Ubuntu 22.04](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-ansible-on-ubuntu-22-04)
+[How To Install and Configure Ansible on Ubuntu](https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-ansible-on-ubuntu-22-04)
 
 While you might not opt for it, at some point I figure I might need it, so I installed Ansible.  If you're not using Ubuntu, your procedure will be different.  It's pretty well-documented, so Google it.
 
@@ -311,21 +318,25 @@ Again, totally optional, and if you're using a platform other than Ubuntu, follo
 
 Like I said above, sometimes you want to treat your "lab in the box" as an appliance and skip the CLI, so having the option to use Cockpit for system monitoring and administration is nice.  We can install Cockpit with a single command, and a quick configuration change.
 
-For Ubuntu (22.04):
+For Ubuntu (26.04):
 ```
 sudo apt-get update ; sudo apt-get install -y cockpit
 ```
 
-Since GitLab is using the default Cockpit web interface port of `9090`, we need to change that.  I made it `8090` by editing the `/lib/systemd/system/cockpit.socket` file and changing it there.
+Since GitLab is using the default Cockpit web interface port of `9090`, we need to change that.  I made it `8090` with a `systemd` override, which a package update won't overwrite.
 
-Edit `/lib/systemd/system/cockpit.socket`:
+Create the override:
 ```
-sudo vi /lib/systemd/system/cockpit.socket
+sudo mkdir -p /etc/systemd/system/cockpit.socket.d
+```
+```
+sudo vi /etc/systemd/system/cockpit.socket.d/listen.conf
 ```
 
-Like this:
+Like this.  The empty `ListenStream=` line clears the default port, and the restart fails without it:
 ```
 [Socket]
+ListenStream=
 ListenStream=8090
 ```
 
@@ -348,14 +359,14 @@ Now you can log in to Cockpit at `https://yourhostname:8090`.
 
 ![Cockpit Overview Screen](images/archive/Screen%20Shot%202023-02-22%20at%203.01.05%20PM.png)
 
-You should be able to log in as `root`, or another local user, and should get the dashboard as seen above.
+You should be able to log in as a local user, and should get the dashboard as seen above.  Cockpit doesn't allow `root` to log in by default.
 
 ***That's it!***
 
 
 ## Summary
 
-In this tutorial, we created a "lab in a box" to host a local GitLab instance with CI/CD runner,levearging KVM/`libvirt` for our own "private cloud", Terraform/Packer/Anisible for automation/builds and Cockpit for a GUI management interface.  This should give us a great place to develop and test code, especially Infrastructure-as-Code projects.
+In this tutorial, we created a "lab in a box" to host a local GitLab instance with CI/CD runner, leveraging KVM/`libvirt` for our own "private cloud", Terraform/Packer/Ansible for automation/builds and Cockpit for a GUI management interface.  This should give us a great place to develop and test code, especially Infrastructure-as-Code projects.
 
 Enjoy!
 
