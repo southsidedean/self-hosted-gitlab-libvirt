@@ -85,8 +85,9 @@ Done when: `checks` passes, and the sample job in the first-pipeline guide goes 
 
 - Correct the runner steps: GitLab Runner and the driver scripts run on the host.
 - Remove the password from the `runner-builder.sh` step, and the console login that used it. The script has used a random password since 0.3.0.
-- Choose one way to set up the runner, and test it. Today, pasting a config with a fake token and then running `gitlab-runner register` leaves two entries. `gitlab-runner register --non-interactive`, as in `docs/release-checklist.md`, leaves one, and passed the 0.3.0 test.
-- Move to the current registration flow: create the runner in GitLab with **Run untagged** selected, then register with its `glrt-` token. The 0.3.0 test created the runner through GitLab's API, so walk through the screens by hand.
+- Mention the two setup pages GitLab shows after the first login, which you can skip.
+- Choose one way to set up the runner, and test it. The README now uses `gitlab-runner register --non-interactive`, which leaves one entry. Pasting a config with a fake token and then registering left two.
+- Move to the current registration flow: create the runner in GitLab with **Run untagged jobs** selected, then register with its `glrt-` token. The screens were checked in a browser on GitLab 19.5, but the screens and the install haven't been followed together from start to finish.
 - List the host's packages: `qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients virtinst guestfs-tools`.
 - Say "instance runner" where GitLab now does.
 - Document everything the host needs, including the exact command for the SSH key. The scripts expect `/root/.ssh/id_rsa`, and newer `ssh-keygen` versions default to ed25519.

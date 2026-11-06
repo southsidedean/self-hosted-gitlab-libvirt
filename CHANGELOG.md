@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0 (unreleased)
+
+- Rewrote the README's runner steps to match the scripts and current GitLab. GitLab Runner runs on the host, there's no password or console login, and you register with a `glrt-` token.
+
 ## 0.3.0 (2026-11-05)
 
 - Fixed `cleanup.sh`, which asked the VM to shut down and deleted its disk without waiting. It now stops the VM first, waits up to 5 minutes, and keeps the disk if the VM won't stop. It also deletes the disk when `prepare.sh` failed before creating a VM.
